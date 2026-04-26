@@ -13,16 +13,24 @@ from app.db.base import engine, init_db_schema
 from app.services.cleanup_worker import cleanup_inactive_sessions
 from app.services.redis_client import redis_client
 
-_log = logging.getLogger("uvicorn.error")
-
 # Render (and some dashboards) serve the FE on *.onrender.com. Regex is checked in addition to
 # AI_INTERVIEW_CORS_ORIGINS so preflight still passes if the explicit list is mis-copied.
 _CORS_ONRENDER_REGEX = r"^https://[^/]+\.onrender\.com$"
 
 
+def _log_cors_at_startup() -> None:
+    """Stdout + WARNING: Render often hides or truncates uvicorn INFO lines."""
+    msg = (
+        f"ai-interview CORS allow_origins={settings.cors_origins_list!r} "
+        f"allow_origin_regex={_CORS_ONRENDER_REGEX!r}"
+    )
+    print(msg, flush=True)
+    logging.getLogger("uvicorn.error").warning("%s", msg)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    _log.info("CORS allow_origins=%s", settings.cors_origins_list)
+    _log_cors_at_startup()
     if settings.effective_auto_create_schema:
         await init_db_schema()
 
