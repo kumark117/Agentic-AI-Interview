@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     lock_heartbeat_seconds: int = 5
     lock_retry_attempts: int = 3
     lock_wait_budget_seconds: float = 2.0
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     model_config = SettingsConfigDict(env_file=".env", env_prefix="AI_INTERVIEW_", extra="ignore")
 
     @property
@@ -50,6 +51,15 @@ class Settings(BaseSettings):
         if self.mode in {"local-full", "remote"}:
             return False
         return self.disable_cleanup_worker
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        out: list[str] = []
+        for origin in self.cors_origins.split(","):
+            o = origin.strip().strip('"').strip("'")
+            if o:
+                out.append(o)
+        return out
 
 
 settings = Settings()

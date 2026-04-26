@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 from contextlib import suppress
@@ -12,9 +13,16 @@ from app.db.base import engine, init_db_schema
 from app.services.cleanup_worker import cleanup_inactive_sessions
 from app.services.redis_client import redis_client
 
+_log = logging.getLogger("uvicorn.error")
+
+# Render (and some dashboards) serve the FE on *.onrender.com. Regex is checked in addition to
+# AI_INTERVIEW_CORS_ORIGINS so preflight still passes if the explicit list is mis-copied.
+_CORS_ONRENDER_REGEX = r"^https://[^/]+\.onrender\.com$"
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    _log.info("CORS allow_origins=%s", settings.cors_origins_list)
     if settings.effective_auto_create_schema:
         await init_db_schema()
 
@@ -37,7 +45,8 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=settings.cors_origins_list,
+    allow_origin_regex=_CORS_ONRENDER_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
