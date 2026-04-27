@@ -580,6 +580,20 @@ main.start-page {
   margin-top: 10px;
 }
 
+/* LLM: always-on callout so layout does not jump when status / banners change */
+.interview-llm-report-hint-box {
+  flex-shrink: 0;
+  margin-top: 10px;
+}
+
+.interview-hint--fixed-llm {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: rgba(99, 140, 255, 0.1);
+  border: 1px solid rgba(99, 140, 255, 0.28);
+}
+
 /* ——— Live interview — half-width columns, log on right ——— */
 main.interview-page {
   max-width: 1120px;

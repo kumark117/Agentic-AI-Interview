@@ -18,8 +18,6 @@ const PENDING_SESSION_START_KEY = "ai_interview_pending_session_start";
 /** Reserved URL segment — not a real backend session id. */
 const BOOTSTRAP_ROUTE = "_bootstrap";
 const REPORT_REDIRECT_MS = 1500;
-/** Keep “Correct Answers Report” hint visible this long after a new question arrives (LLM mode). */
-const LLM_HINT_HOLD_MS = 8000;
 
 let interviewBootstrapInFlight: Promise<void> | null = null;
 
@@ -42,7 +40,6 @@ export default function InterviewPage() {
   const [logs, setLogs] = useState<SessionEvent[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
-  const [llmHintHoldUntil, setLlmHintHoldUntil] = useState<number | null>(null);
 
   const isBootstrapRoute = params.session_id === BOOTSTRAP_ROUTE;
 
@@ -60,13 +57,6 @@ export default function InterviewPage() {
     }
   }, [isBootstrapRoute]);
 
-  useEffect(() => {
-    if (llmHintHoldUntil == null) return;
-    const ms = Math.max(0, llmHintHoldUntil - Date.now());
-    const t = window.setTimeout(() => setLlmHintHoldUntil(null), ms + 50);
-    return () => window.clearTimeout(t);
-  }, [llmHintHoldUntil]);
-
   const llmEndReportHint = (
     <>
       At the end of the interview, open the Interview Report — you can run <strong>Correct Answers Report</strong> there for
@@ -81,9 +71,7 @@ export default function InterviewPage() {
     </>
   );
 
-  const showLlmReportHintBelowQuestion =
-    sessionStore.interviewMode === "llm" &&
-    (status === "PROCESSING" || (llmHintHoldUntil != null && Date.now() < llmHintHoldUntil));
+  const showFixedLlmReportHint = sessionStore.interviewMode === "llm" && !isBootstrapRoute;
 
   useEffect(() => {
     if (params.session_id !== BOOTSTRAP_ROUTE) {
@@ -167,11 +155,7 @@ export default function InterviewPage() {
           sessionStore.incrementQuestionsAsked();
           setStatus("QUESTIONING");
           setBanner(null);
-          if (sessionRef.current.interviewMode === "llm") {
-            setLlmHintHoldUntil(Date.now() + LLM_HINT_HOLD_MS);
-          }
         } else if (event.event_type === "interview_completed") {
-          setLlmHintHoldUntil(null);
           setStatus("END");
           setBanner(null);
           if (reportNavTimeoutRef.current != null) {
@@ -274,8 +258,10 @@ export default function InterviewPage() {
                 currentQuestionNumber={sessionStore.questionsAsked}
                 maxQuestions={sessionStore.maxQuestions}
               />
-              {showLlmReportHintBelowQuestion ? (
-                <p className="interview-hint interview-hint--below-question">{llmEndReportHint}</p>
+              {showFixedLlmReportHint ? (
+                <aside className="interview-llm-report-hint-box" aria-label="Correct Answers Report reminder">
+                  <p className="interview-hint interview-hint--fixed-llm">{llmEndReportHint}</p>
+                </aside>
               ) : null}
             </>
           )}
