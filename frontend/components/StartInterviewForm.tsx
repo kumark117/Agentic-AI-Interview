@@ -8,8 +8,8 @@ import { useSessionStore } from "../lib/session-context";
 import { StartSessionRequest } from "../lib/types";
 
 export function StartInterviewForm() {
-  const productVersion = "5.0";
-  const frontendVersion = "0.1.0";
+  const productVersion = "2.1";
+  const frontendVersion = "2.1";
   const router = useRouter();
   const sessionStore = useSessionStore();
   const [loading, setLoading] = useState(false);
