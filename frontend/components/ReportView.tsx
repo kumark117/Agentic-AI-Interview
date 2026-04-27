@@ -27,7 +27,16 @@ export function ReportView({
     }
   }, [report]);
 
-  if (loading) return <main>Loading report...</main>;
+  if (loading) {
+    return (
+      <main className="interview-page">
+        <h1>Interview Report</h1>
+        <div className="interview-spinner-wrap" role="status" aria-live="polite" aria-label="Loading report">
+          <div className="interview-spinner" />
+        </div>
+      </main>
+    );
+  }
   if (error) return <main>{error}</main>;
   if (!report) return <main>No report found.</main>;
 

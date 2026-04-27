@@ -17,6 +17,7 @@ import { EvaluationPayload, Question, SessionEvent } from "../../../lib/types";
 const PENDING_SESSION_START_KEY = "ai_interview_pending_session_start";
 /** Reserved URL segment — not a real backend session id. */
 const BOOTSTRAP_ROUTE = "_bootstrap";
+const REPORT_REDIRECT_MS = 3500;
 
 let interviewBootstrapInFlight: Promise<void> | null = null;
 
@@ -125,14 +126,14 @@ export default function InterviewPage() {
           setBanner(null);
         } else if (event.event_type === "interview_completed") {
           setStatus("END");
-          setBanner("Interview complete — opening report in 5 seconds…");
+          setBanner(null);
           if (reportNavTimeoutRef.current != null) {
             clearTimeout(reportNavTimeoutRef.current);
           }
           reportNavTimeoutRef.current = setTimeout(() => {
             reportNavTimeoutRef.current = null;
             router.push(`/report/${params.session_id}`);
-          }, 5000);
+          }, REPORT_REDIRECT_MS);
         } else if (event.event_type === "error") {
           setBanner(String(event.payload.message ?? "An error occurred."));
         }
