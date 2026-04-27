@@ -322,22 +322,49 @@ async def end_session(session_id: str, body: dict, x_session_token: str | None =
 @router.get("/sessions/{session_id}/report")
 async def get_final_report(session_id: str, x_session_token: str | None = Header(default=None), db: AsyncSession = Depends(get_db_session)):
     session = await _require_session(db, session_id, x_session_token)
+    interview_mode = await _get_session_interview_mode(session_id)
     rows = (await db.execute(select(Answer, Question, Evaluation).join(Question, Question.question_id == Answer.question_id).join(Evaluation, Evaluation.answer_id == Answer.answer_id).where(Answer.session_id == session_id).order_by(Answer.created_at.asc()))).all()
     total = 0.0
     weighted_total = 0.0
     den = 0.0
     results = []
+    interviewer_used_llm = False
+    evaluator_used_llm = False
+    evaluator_fallback_used = False
     for answer, question, evaluation in rows:
         total += evaluation.score
         w = 1.0 if evaluation.confidence.value == "HIGH" else 0.5
         weighted_total += evaluation.score * w
         den += w
+        interviewer_used_llm = interviewer_used_llm or question.source == QuestionSource.interviewer_agent
+        evaluator_used_llm = evaluator_used_llm or evaluation.source == EvaluationSource.llm
+        evaluator_fallback_used = evaluator_fallback_used or evaluation.fallback_flag
         results.append({"question_id": question.question_id, "question": question.text, "answer": answer.answer_text, "score": evaluation.score, "confidence": evaluation.confidence.value, "feedback": evaluation.feedback})
     overall = round(total / len(results), 2) if results else 0.0
     weighted = round(weighted_total / den, 2) if den else 0.0
     is_complete = session.end_reason in {EndReason.candidate_completed, EndReason.max_questions_reached}
     rec = recommendation(weighted) if is_complete else None
-    report = {"session_id": session.session_id, "candidate_id": session.candidate_id, "status": session.status, "is_complete": is_complete, "end_reason": session.end_reason.value if session.end_reason else None, "overall_score": overall, "weighted_score": weighted, "strengths": ["Clear communication"] if weighted >= 6 else [], "weaknesses": ["Needs deeper tradeoff analysis"] if weighted < 7.5 else [], "question_results": results, "recommendation": rec}
+    interviewer_engine = "LLM" if interview_mode == "llm" and interviewer_used_llm else "Mock"
+    evaluator_engine = "LLM" if interview_mode == "llm" and evaluator_used_llm else "Mock"
+    report = {
+        "session_id": session.session_id,
+        "candidate_id": session.candidate_id,
+        "status": session.status,
+        "is_complete": is_complete,
+        "end_reason": session.end_reason.value if session.end_reason else None,
+        "overall_score": overall,
+        "weighted_score": weighted,
+        "strengths": ["Clear communication"] if weighted >= 6 else [],
+        "weaknesses": ["Needs deeper tradeoff analysis"] if weighted < 7.5 else [],
+        "question_results": results,
+        "recommendation": rec,
+        "runtime": {
+            "selected_mode": interview_mode.upper(),
+            "interviewer": interviewer_engine,
+            "evaluator": evaluator_engine,
+            "fallback_used": evaluator_fallback_used,
+        },
+    }
     if not is_complete:
         report["note"] = "This report is partial. The interview ended before all questions were completed."
     return report

@@ -78,3 +78,9 @@ def test_llm_mode_gracefully_falls_back_without_key(client) -> None:
         json={"question_id": qid, "answer_text": "A detailed answer used to exercise llm mode fallback."},
     )
     assert resp.status_code == 200
+    report = client.get(f"/api/v1/sessions/{sid}/report", headers={"X-Session-Token": tok})
+    assert report.status_code == 200
+    runtime = report.json()["runtime"]
+    assert runtime["selected_mode"] == "LLM"
+    assert runtime["interviewer"] in {"LLM", "Mock"}
+    assert runtime["evaluator"] in {"LLM", "Mock"}
