@@ -113,6 +113,33 @@ async def _generate_question_with_mode(interview_mode: str, current_difficulty: 
     return await interviewer.generate_next_question(current_difficulty, previous_questions)
 
 
+def _seed_question_fallback() -> GeneratedQuestion:
+    """Deterministic first question for mock mode or when LLM is not used for Q1."""
+    return GeneratedQuestion(
+        question_id=f"q_{uuid.uuid4().hex[:8]}",
+        text="Explain how React reconciliation works.",
+        difficulty=Difficulty.medium,
+        topic="react_fundamentals",
+        source=QuestionSource.fallback_bank,
+    )
+
+
+async def _first_question_for_session(interview_mode: str) -> GeneratedQuestion:
+    if interview_mode != "llm":
+        return _seed_question_fallback()
+    if not _llm_enabled():
+        # Same deterministic first question as before when LLM is not configured.
+        return _seed_question_fallback()
+    try:
+        await asyncio.wait_for(llm_semaphore.acquire(), timeout=2.0)
+    except TimeoutError:
+        return await interviewer.generate_next_question(Difficulty.medium, [])
+    try:
+        return await _generate_question_with_mode("llm", Difficulty.medium, [])
+    finally:
+        llm_semaphore.release()
+
+
 @router.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     return HealthResponse(status="ok", service=settings.app_name, version=settings.app_version, release_tag=settings.release_tag)
@@ -126,8 +153,12 @@ async def create_session(payload: StartSessionRequest, request: Request, db: Asy
     now = _now()
     session_id = f"sess_{uuid.uuid4().hex[:12]}"
     session_token = f"tok_{uuid.uuid4()}"
-    qid = f"q_{uuid.uuid4().hex[:8]}"
-    qtext = "Explain how React reconciliation works."
+    first_q = await _first_question_for_session(payload.interview_mode)
+    qid = first_q.question_id
+    qtext = first_q.text
+    qdiff = first_q.difficulty
+    qtopic = first_q.topic
+    qsource = first_q.source
     db.add(
         Session(
             session_id=session_id,
@@ -140,7 +171,7 @@ async def create_session(payload: StartSessionRequest, request: Request, db: Asy
             status=SessionStatus.QUESTIONING,
             end_reason=None,
             current_question_id=qid,
-            current_difficulty=Difficulty.medium,
+            current_difficulty=qdiff,
             max_questions=payload.max_questions,
             questions_asked=1,
             last_activity_at=now,
@@ -154,16 +185,22 @@ async def create_session(payload: StartSessionRequest, request: Request, db: Asy
             question_id=qid,
             session_id=session_id,
             text=qtext,
-            difficulty=Difficulty.medium,
-            topic="react_fundamentals",
-            source=QuestionSource.fallback_bank,
+            difficulty=qdiff,
+            topic=qtopic,
+            source=qsource,
             created_at=now,
         )
     )
     await db.commit()
     # Keep mode selection per-session in Redis to avoid a schema migration while introducing UI mode choice.
     await redis_client.set(INTERVIEW_MODE_KEY.format(session_id=session_id), payload.interview_mode, ex=60 * 60 * 24 * 7)
-    return StartSessionResponse(session_id=session_id, session_token=session_token, status=SessionStatus.QUESTIONING, current_question={"question_id": qid, "text": qtext, "difficulty": Difficulty.medium}, stream_url=f"/api/v1/sessions/{session_id}/stream?token={session_token}")
+    return StartSessionResponse(
+        session_id=session_id,
+        session_token=session_token,
+        status=SessionStatus.QUESTIONING,
+        current_question={"question_id": qid, "text": qtext, "difficulty": qdiff},
+        stream_url=f"/api/v1/sessions/{session_id}/stream?token={session_token}",
+    )
 
 
 @router.post("/sessions/{session_id}/answers", response_model=SubmitAnswerResponse, responses={409: {"model": ErrorResponse}, 429: {"model": ErrorResponse}, 401: {"model": ErrorResponse}})
