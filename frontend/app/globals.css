@@ -45,3 +45,56 @@ button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.report-section {
+  overflow-x: auto;
+}
+
+.report-json {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.report-home-link {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #2d5bff;
+  color: #e7ecff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.report-home-link:hover {
+  filter: brightness(1.06);
+}
+
+.qa-input-form textarea {
+  max-width: 760px;
+}
+
+.qa-input-form button {
+  max-width: 320px;
+}
+
+.start-form-section input,
+.start-form-section select {
+  max-width: 560px;
+}
+
+.start-form-section label {
+  display: block;
+}
+
+.start-form-section label > input,
+.start-form-section label > select,
+.start-form-section label > textarea {
+  margin-left: 10px;
+}
+
+.start-form-button {
+  max-width: 320px;
+}

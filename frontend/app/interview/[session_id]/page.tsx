@@ -84,11 +84,60 @@ export default function InterviewPage() {
     }
   }
 
+  const sessionClosed = [banner, submitError].some((message) =>
+    String(message ?? "")
+      .toLowerCase()
+      .includes("not accepting answers")
+  );
+  const sessionRestartSuggested = [banner, submitError].some((message) => {
+    const normalized = String(message ?? "").toLowerCase();
+    return normalized.includes("not accepting answers") || normalized.includes("session token missing");
+  });
+
   return (
     <main>
+      <section
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: 10
+        }}
+      >
+        <div
+          style={{
+            border: "1px solid #2f3f7a",
+            borderRadius: 10,
+            padding: "8px 12px",
+            background: "rgba(10, 20, 52, 0.35)",
+            maxWidth: 420
+          }}
+        >
+          <div style={{ opacity: 0.85, fontSize: 13 }}>
+            <strong>Name:</strong> {sessionStore.candidateName ?? "Unknown"}
+          </div>
+          <div style={{ opacity: 0.85, fontSize: 13 }}>
+            <strong>Candidate ID:</strong> {sessionStore.candidateId ?? "Unknown"}
+          </div>
+        </div>
+      </section>
       <h1>Live Interview</h1>
       <StatusBanner message={banner} />
       {submitError ? <StatusBanner message={submitError} /> : null}
+      {sessionRestartSuggested ? (
+        <section>
+          <p style={{ marginTop: 0 }}>
+            This session cannot continue from this page. Start a new session, or open report if it is already completed.
+          </p>
+          {sessionClosed ? (
+            <button type="button" style={{ width: "auto", marginRight: 10 }} onClick={() => router.push(`/report/${params.session_id}`)}>
+              View Report
+            </button>
+          ) : null}
+          <button type="button" style={{ width: "auto" }} onClick={() => router.push("/")}>
+            New Session
+          </button>
+        </section>
+      ) : null}
       <QuestionPanel question={question} />
       <AnswerInput disabled={status !== "QUESTIONING"} onSubmit={onSubmit} />
       <FeedbackPanel feedback={feedback} />

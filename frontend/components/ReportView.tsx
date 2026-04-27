@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function ReportView({
   report,
   loading,
@@ -14,9 +16,12 @@ export function ReportView({
   return (
     <main>
       <h1>Interview Report</h1>
+      <Link href="/" className="report-home-link">
+        New Session
+      </Link>
       {report.is_complete === false ? <p>Partial report — interview ended before completion.</p> : null}
-      <section>
-        <pre>{JSON.stringify(report, null, 2)}</pre>
+      <section className="report-section">
+        <pre className="report-json">{JSON.stringify(report, null, 2)}</pre>
       </section>
     </main>
   );

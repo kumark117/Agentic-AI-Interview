@@ -59,7 +59,7 @@ export function StartInterviewForm() {
         candidate_name: normalizedCandidateName,
         max_questions: parsedMaxQuestions
       });
-      sessionStore.setSession(response.session_id, response.session_token, response.current_question);
+      sessionStore.setSession(response.session_id, response.session_token, response.current_question, form.candidate_id, normalizedCandidateName);
       router.push(`/interview/${response.session_id}`);
     } catch (e) {
       setError((e as Error).message);
@@ -71,7 +71,7 @@ export function StartInterviewForm() {
   return (
     <main>
       <h1>Start Interview</h1>
-      <section>
+      <section className="start-form-section">
         <label>
           Candidate ID
           <p style={{ marginTop: 8, marginBottom: 12 }}>{form.candidate_id}</p>
@@ -127,7 +127,7 @@ export function StartInterviewForm() {
             Applied only when starting a new interview session.
           </p>
         </label>
-        <button type="button" onClick={onStart} disabled={loading}>
+        <button className="start-form-button" type="button" onClick={onStart} disabled={loading}>
           {loading ? "Starting..." : "Start Interview"}
         </button>
         {error ? <p>{error}</p> : null}
