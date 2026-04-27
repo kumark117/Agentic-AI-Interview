@@ -196,7 +196,7 @@ main.start-page {
   max-width: 38em;
 }
 
-.start-llm-report-hint {
+.start-report-hint {
   margin: 16px 0 0;
   padding: 12px 16px;
   border-radius: 11px;
@@ -208,7 +208,7 @@ main.start-page {
   max-width: 42em;
 }
 
-.start-llm-report-hint strong {
+.start-report-hint strong {
   font-weight: 700;
   color: #eef2ff;
 }

@@ -151,12 +151,19 @@ export function StartInterviewForm() {
             </div>
           </div>
         </div>
-        {form.interview_mode === "llm" ? (
-          <p className="start-llm-report-hint" role="note">
-            With <strong>AI LLM</strong> selected: when the interview ends, open the <strong>Interview Report</strong> — you can run{" "}
-            <strong>Correct Answers Report</strong> there for on-demand reference solutions.
-          </p>
-        ) : null}
+        <p className="start-report-hint" role="note">
+          {form.interview_mode === "llm" ? (
+            <>
+              With <strong>AI LLM</strong> selected: when the interview ends, open the <strong>Interview Report</strong> — you can run{" "}
+              <strong>Correct Answers Report</strong> there for on-demand reference solutions.
+            </>
+          ) : (
+            <>
+              With <strong>Mock</strong> selected, <strong>Correct Answers Report</strong> is not available (it runs only for{" "}
+              <strong>AI LLM</strong> sessions after you finish). Switch the engine above if you want that reference report.
+            </>
+          )}
+        </p>
       </header>
 
       <section className="start-form-card" aria-labelledby="start-form-heading">

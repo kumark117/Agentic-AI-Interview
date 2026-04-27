@@ -18,6 +18,8 @@ const PENDING_SESSION_START_KEY = "ai_interview_pending_session_start";
 /** Reserved URL segment — not a real backend session id. */
 const BOOTSTRAP_ROUTE = "_bootstrap";
 const REPORT_REDIRECT_MS = 3500;
+/** Keep “Correct Answers Report” hint visible this long after a new question arrives (LLM mode). */
+const LLM_HINT_HOLD_MS = 8000;
 
 let interviewBootstrapInFlight: Promise<void> | null = null;
 
@@ -40,20 +42,30 @@ export default function InterviewPage() {
   const [logs, setLogs] = useState<SessionEvent[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+  const [llmHintHoldUntil, setLlmHintHoldUntil] = useState<number | null>(null);
 
   const isBootstrapRoute = params.session_id === BOOTSTRAP_ROUTE;
 
-  const pendingBootstrapIsLlm = useMemo(() => {
-    if (typeof window === "undefined" || !isBootstrapRoute) return false;
+  const pendingBootstrapMode = useMemo<"llm" | "mock" | null>(() => {
+    if (typeof window === "undefined" || !isBootstrapRoute) return null;
     const raw = sessionStorage.getItem(PENDING_SESSION_START_KEY);
-    if (!raw) return false;
+    if (!raw) return null;
     try {
       const p = JSON.parse(raw) as { interview_mode?: string };
-      return p.interview_mode === "llm";
+      if (p.interview_mode === "llm") return "llm";
+      if (p.interview_mode === "mock") return "mock";
+      return null;
     } catch {
-      return false;
+      return null;
     }
   }, [isBootstrapRoute]);
+
+  useEffect(() => {
+    if (llmHintHoldUntil == null) return;
+    const ms = Math.max(0, llmHintHoldUntil - Date.now());
+    const t = window.setTimeout(() => setLlmHintHoldUntil(null), ms + 50);
+    return () => window.clearTimeout(t);
+  }, [llmHintHoldUntil]);
 
   const llmEndReportHint = (
     <>
@@ -61,6 +73,17 @@ export default function InterviewPage() {
       LLM-written reference solutions.
     </>
   );
+
+  const mockBootstrapReportHint = (
+    <>
+      <strong>Correct Answers Report</strong> is only available for sessions started in <strong>AI LLM</strong> mode (from the
+      Interview Report after you finish). Mock interviews use the standard report only.
+    </>
+  );
+
+  const showLlmReportHintBelowQuestion =
+    sessionStore.interviewMode === "llm" &&
+    (status === "PROCESSING" || (llmHintHoldUntil != null && Date.now() < llmHintHoldUntil));
 
   useEffect(() => {
     if (params.session_id !== BOOTSTRAP_ROUTE) {
@@ -144,7 +167,11 @@ export default function InterviewPage() {
           sessionStore.incrementQuestionsAsked();
           setStatus("QUESTIONING");
           setBanner(null);
+          if (sessionRef.current.interviewMode === "llm") {
+            setLlmHintHoldUntil(Date.now() + LLM_HINT_HOLD_MS);
+          }
         } else if (event.event_type === "interview_completed") {
+          setLlmHintHoldUntil(null);
           setStatus("END");
           setBanner(null);
           if (reportNavTimeoutRef.current != null) {
@@ -228,7 +255,11 @@ export default function InterviewPage() {
                 <div className="interview-spinner" />
                 <p className="interview-spinner__caption">Creating your session…</p>
               </div>
-              {pendingBootstrapIsLlm ? <p className="interview-hint interview-hint--below-spinner">{llmEndReportHint}</p> : null}
+              {pendingBootstrapMode === "llm" ? (
+                <p className="interview-hint interview-hint--below-spinner">{llmEndReportHint}</p>
+              ) : pendingBootstrapMode === "mock" ? (
+                <p className="interview-hint interview-hint--below-spinner">{mockBootstrapReportHint}</p>
+              ) : null}
             </section>
           ) : (
             <>
@@ -237,7 +268,7 @@ export default function InterviewPage() {
                 currentQuestionNumber={sessionStore.questionsAsked}
                 maxQuestions={sessionStore.maxQuestions}
               />
-              {sessionStore.interviewMode === "llm" && status === "PROCESSING" ? (
+              {showLlmReportHintBelowQuestion ? (
                 <p className="interview-hint interview-hint--below-question">{llmEndReportHint}</p>
               ) : null}
             </>
