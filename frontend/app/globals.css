@@ -82,9 +82,9 @@ button:disabled {
 
 /* ——— Start interview page ——— */
 main.start-page {
-  max-width: 640px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 10px 12px 16px;
+  padding: 18px 18px 28px;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -101,7 +101,7 @@ main.start-page {
 }
 
 .start-hero {
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
 .start-hero__row {
@@ -118,8 +118,8 @@ main.start-page {
 }
 
 .start-hero__eyebrow {
-  margin: 0 0 4px;
-  font-size: 11px;
+  margin: 0 0 6px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -128,7 +128,7 @@ main.start-page {
 
 .start-hero__title {
   margin: 0;
-  font-size: clamp(1.35rem, 3.2vw, 1.65rem);
+  font-size: clamp(1.65rem, 3.6vw, 2.1rem);
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.15;
@@ -139,11 +139,11 @@ main.start-page {
 }
 
 .start-hero__subtitle {
-  margin: 6px 0 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #95a6d4;
-  max-width: 34em;
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #a8b8e6;
+  max-width: 38em;
 }
 
 .start-hero__actions {
@@ -151,18 +151,18 @@ main.start-page {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 10px;
 }
 
 .start-toolbar__about {
   width: auto;
   margin: 0;
-  padding: 9px 16px;
+  padding: 11px 18px;
   border-radius: 999px;
   background: rgba(45, 91, 255, 0.2);
   border: 1px solid rgba(99, 140, 255, 0.45);
   color: #dbe4ff;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -178,7 +178,7 @@ main.start-page {
 }
 
 .start-engine__label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -188,7 +188,7 @@ main.start-page {
 
 .start-engine__toggle {
   display: inline-flex;
-  padding: 3px;
+  padding: 4px;
   border-radius: 12px;
   background: rgba(8, 12, 28, 0.65);
   border: 1px solid #2c3a66;
@@ -198,12 +198,12 @@ main.start-page {
 .start-engine__option {
   width: auto;
   margin: 0;
-  padding: 8px 14px;
+  padding: 10px 18px;
   border-radius: 9px;
   border: 0;
   background: transparent;
   color: #9aaee0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   box-shadow: none;
   transition: color 0.15s ease, background 0.15s ease;
@@ -222,8 +222,11 @@ main.start-page {
 
 .start-form-card {
   position: relative;
-  padding: 14px 16px 14px;
-  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 24px 22px;
+  min-height: min(52vh, 560px);
+  border-radius: 16px;
   background: linear-gradient(165deg, rgba(24, 32, 58, 0.95) 0%, rgba(15, 21, 42, 0.98) 100%);
   border: 1px solid rgba(80, 110, 200, 0.35);
   box-shadow:
@@ -232,11 +235,17 @@ main.start-page {
     0 0 80px -30px rgba(61, 99, 255, 0.25);
 }
 
+@media (max-width: 519px) {
+  .start-form-card {
+    min-height: auto;
+  }
+}
+
 .start-form-card::before {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 1px;
   background: linear-gradient(145deg, rgba(120, 160, 255, 0.25), transparent 40%, transparent 60%, rgba(100, 200, 255, 0.08));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -247,23 +256,24 @@ main.start-page {
 }
 
 .start-form-card__title {
-  margin: 0 0 10px;
-  font-size: 10px;
+  margin: 0 0 18px;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #7a8cc4;
 }
 
 .start-form-grid {
   display: block;
+  flex: 1 1 auto;
 }
 
 @media (min-width: 520px) {
   .start-form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0 14px;
+    gap: 18px 22px;
     align-items: start;
   }
 
@@ -273,7 +283,7 @@ main.start-page {
 }
 
 .start-field {
-  margin-bottom: 10px;
+  margin-bottom: 18px;
 }
 
 .start-field:last-child {
@@ -282,10 +292,10 @@ main.start-page {
 
 .start-field__label {
   display: block;
-  margin-bottom: 4px;
-  font-size: 12px;
+  margin-bottom: 8px;
+  font-size: 15px;
   font-weight: 600;
-  color: #c5d0f5;
+  color: #dce4ff;
 }
 
 .start-field__row {
@@ -298,10 +308,10 @@ main.start-page {
 .start-badge {
   display: inline-flex;
   align-items: center;
-  padding: 5px 10px;
-  border-radius: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
   font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.02em;
   background: rgba(45, 91, 255, 0.12);
@@ -312,12 +322,13 @@ main.start-page {
 .start-input {
   width: 100%;
   margin: 0;
-  padding: 9px 11px;
-  border-radius: 9px;
+  padding: 14px 16px;
+  min-height: 52px;
+  border-radius: 11px;
   border: 1px solid #3d4d7a;
   background: rgba(10, 14, 32, 0.85);
   color: #eef2ff;
-  font-size: 14px;
+  font-size: 16px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -345,22 +356,22 @@ main.start-page {
 }
 
 .start-field__hint {
-  margin: 4px 0 0;
-  font-size: 11px;
-  line-height: 1.35;
-  color: #7d8fba;
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #8b9dc9;
 }
 
 .start-field__error {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: 8px 0 0;
+  font-size: 14px;
   color: #ff9a9a;
 }
 
 .start-cta-wrap {
-  margin-top: 10px;
-  padding-top: 10px;
-  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  margin-top: auto;
+  padding-top: 20px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   border-top: 1px solid rgba(60, 80, 140, 0.35);
   position: sticky;
   bottom: 0;
@@ -372,9 +383,10 @@ main.start-page {
   width: 100%;
   max-width: none;
   margin: 0;
-  padding: 11px 18px;
-  border-radius: 10px;
-  font-size: 15px;
+  padding: 16px 22px;
+  min-height: 54px;
+  border-radius: 12px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: 0.02em;
   border: 0;
@@ -410,11 +422,11 @@ main.start-page {
 }
 
 .start-alert {
-  margin-top: 8px;
-  padding: 8px 10px;
-  border-radius: 9px;
-  font-size: 13px;
-  line-height: 1.4;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  font-size: 15px;
+  line-height: 1.45;
 }
 
 .start-alert--error {

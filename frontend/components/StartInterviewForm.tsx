@@ -117,7 +117,9 @@ export function StartInterviewForm() {
           <div className="start-hero__lead">
             <p className="start-hero__eyebrow">Agentic AI Interview</p>
             <h1 className="start-hero__title">Start your session</h1>
-            <p className="start-hero__subtitle">Mock or LLM engine, then live SSE — configure below and go.</p>
+            <p className="start-hero__subtitle">
+              Choose Mock or AI LLM, set your name and length, then open the live interview with SSE updates.
+            </p>
           </div>
           <div className="start-hero__actions">
             <button className="start-toolbar__about" type="button" onClick={() => setShowAbout(true)}>
