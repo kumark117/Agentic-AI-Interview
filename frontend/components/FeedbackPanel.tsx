@@ -1,3 +1,4 @@
+import { formatEvaluationSource } from "../lib/formatDisplay";
 import { EvaluationPayload } from "../lib/types";
 
 export function FeedbackPanel({ feedback }: { feedback: EvaluationPayload | null }) {
@@ -10,7 +11,7 @@ export function FeedbackPanel({ feedback }: { feedback: EvaluationPayload | null
         <>
           <p>Score: {feedback.score}</p>
           <p>Confidence: {feedback.confidence}</p>
-          <p>Source: {feedback.source}</p>
+          <p>Source: {formatEvaluationSource(feedback.source)}</p>
           <p>{feedback.feedback}</p>
         </>
       )}

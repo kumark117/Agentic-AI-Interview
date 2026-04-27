@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
@@ -29,6 +30,20 @@ evaluator = MockEvaluatorAgent()
 interviewer = MockInterviewerAgent()
 INTERVIEW_MODE_KEY = "session:{session_id}:interview_mode"
 logger = logging.getLogger("uvicorn.error")
+
+
+@dataclass(frozen=True)
+class SessionEventLog:
+    db: AsyncSession
+    session_id: str
+
+
+async def _publish_engine_notice(sink: SessionEventLog | None, payload: dict) -> None:
+    if sink is None:
+        return
+    await publish_event(sink.db, redis_client, sink.session_id, EventType.engine_notice, payload)
+
+
 llm_provider = OpenAIProvider(
     api_key=settings.llm_api_key,
     interviewer_model=settings.llm_model_interviewer,
@@ -71,7 +86,14 @@ def _fallback_evaluation(previous_score: float | None, message: str) -> OpenAIEv
     )
 
 
-async def _evaluate_with_mode(interview_mode: str, question_text: str, answer_text: str, previous_score: float | None) -> OpenAIEvaluationResult:
+async def _evaluate_with_mode(
+    interview_mode: str,
+    question_text: str,
+    answer_text: str,
+    previous_score: float | None,
+    *,
+    event_log: SessionEventLog | None = None,
+) -> OpenAIEvaluationResult:
     if interview_mode != "llm":
         mock_eval = await evaluator.evaluate(question_text, answer_text, previous_score)
         return OpenAIEvaluationResult(
@@ -83,33 +105,85 @@ async def _evaluate_with_mode(interview_mode: str, question_text: str, answer_te
         )
 
     if not _llm_enabled():
+        await _publish_engine_notice(
+            event_log,
+            {"kind": "llm_fallback", "phase": "evaluation", "message": "LLM disabled or not configured — using deterministic evaluator."},
+        )
         return _fallback_evaluation(previous_score, "LLM unavailable. Falling back to deterministic evaluator.")
 
     attempts = max(0, settings.llm_max_retries) + 1
     last_error: str | None = None
-    for _ in range(attempts):
+    for attempt in range(attempts):
         try:
             return await llm_provider.evaluate_answer(question_text, answer_text, previous_score)
         except OpenAIProviderError as exc:
             last_error = str(exc)
+            if attempt + 1 < attempts:
+                await _publish_engine_notice(
+                    event_log,
+                    {
+                        "kind": "llm_retry",
+                        "phase": "evaluation",
+                        "message": f"Retrying LLM evaluation (attempt {attempt + 2} of {attempts})…",
+                        "detail": str(exc)[:200],
+                    },
+                )
     logger.warning("LLM evaluate fallback triggered: %s", last_error)
+    await _publish_engine_notice(
+        event_log,
+        {
+            "kind": "llm_fallback",
+            "phase": "evaluation",
+            "message": "LLM evaluation exhausted retries — using deterministic fallback.",
+            "detail": (last_error or "")[:200],
+        },
+    )
     return _fallback_evaluation(previous_score, "LLM evaluation failed. Used deterministic fallback.")
 
 
-async def _generate_question_with_mode(interview_mode: str, current_difficulty: Difficulty, previous_questions: list[str]) -> GeneratedQuestion:
+async def _generate_question_with_mode(
+    interview_mode: str,
+    current_difficulty: Difficulty,
+    previous_questions: list[str],
+    *,
+    event_log: SessionEventLog | None = None,
+) -> GeneratedQuestion:
     if interview_mode != "llm":
         return await interviewer.generate_next_question(current_difficulty, previous_questions)
     if not _llm_enabled():
+        await _publish_engine_notice(
+            event_log,
+            {"kind": "llm_fallback", "phase": "question", "message": "LLM disabled or not configured — using mock question generator."},
+        )
         return await interviewer.generate_next_question(current_difficulty, previous_questions)
 
     attempts = max(0, settings.llm_max_retries) + 1
     last_error: str | None = None
-    for _ in range(attempts):
+    for attempt in range(attempts):
         try:
             return await llm_provider.generate_next_question(current_difficulty, previous_questions)
         except OpenAIProviderError as exc:
             last_error = str(exc)
+            if attempt + 1 < attempts:
+                await _publish_engine_notice(
+                    event_log,
+                    {
+                        "kind": "llm_retry",
+                        "phase": "question",
+                        "message": f"Retrying LLM question generation (attempt {attempt + 2} of {attempts})…",
+                        "detail": str(exc)[:200],
+                    },
+                )
     logger.warning("LLM question fallback triggered: %s", last_error)
+    await _publish_engine_notice(
+        event_log,
+        {
+            "kind": "llm_fallback",
+            "phase": "question",
+            "message": "LLM question generation exhausted retries — using mock generator.",
+            "detail": (last_error or "")[:200],
+        },
+    )
     return await interviewer.generate_next_question(current_difficulty, previous_questions)
 
 
@@ -217,6 +291,7 @@ async def submit_answer(session_id: str, payload: SubmitAnswerRequest, x_session
                     raise HTTPException(status_code=409, detail={"error": "answer_already_submitted", "message": f"An answer for question {payload.question_id} has already been submitted."})
                 session.last_activity_at = _now()
                 session.updated_at = _now()
+                elog = SessionEventLog(db, session_id)
                 await publish_event(db, redis_client, session_id, EventType.thinking, {"message": "Thinking..."})
                 await publish_event(db, redis_client, session_id, EventType.evaluation_started, {"question_id": payload.question_id})
                 question = await db.get(Question, payload.question_id)
@@ -228,14 +303,24 @@ async def submit_answer(session_id: str, payload: SubmitAnswerRequest, x_session
                         await asyncio.wait_for(llm_semaphore.acquire(), timeout=2.0)
                     except TimeoutError:
                         await publish_event(db, redis_client, session_id, EventType.queue_delay, {"message": "High load (~5-7s delay)"})
+                        await _publish_engine_notice(
+                            elog,
+                            {
+                                "kind": "llm_fallback",
+                                "phase": "evaluation",
+                                "message": "LLM capacity wait timed out — deterministic evaluation used.",
+                            },
+                        )
                         evaluation = _fallback_evaluation(prev, "LLM queue delay. Used deterministic fallback.")
                     else:
                         try:
-                            evaluation = await _evaluate_with_mode(interview_mode, question.text, payload.answer_text, prev)
+                            evaluation = await _evaluate_with_mode(
+                                interview_mode, question.text, payload.answer_text, prev, event_log=elog
+                            )
                         finally:
                             llm_semaphore.release()
                 else:
-                    evaluation = await _evaluate_with_mode(interview_mode, question.text, payload.answer_text, prev)
+                    evaluation = await _evaluate_with_mode(interview_mode, question.text, payload.answer_text, prev, event_log=elog)
                 answer_id = f"ans_{uuid.uuid4().hex[:10]}"
                 db.add(Answer(answer_id=answer_id, session_id=session_id, question_id=payload.question_id, answer_text=payload.answer_text, created_at=_now()))
                 db.add(Evaluation(evaluation_id=f"eval_{uuid.uuid4().hex[:10]}", session_id=session_id, question_id=payload.question_id, answer_id=answer_id, score=evaluation.score, feedback=evaluation.feedback, confidence=evaluation.confidence, fallback_flag=evaluation.fallback_flag, source=evaluation.source, created_at=_now()))
@@ -259,14 +344,26 @@ async def submit_answer(session_id: str, payload: SubmitAnswerRequest, x_session
                             await asyncio.wait_for(llm_semaphore.acquire(), timeout=2.0)
                         except TimeoutError:
                             await publish_event(db, redis_client, session_id, EventType.queue_delay, {"message": "High load (~5-7s delay)"})
+                            await _publish_engine_notice(
+                                elog,
+                                {
+                                    "kind": "llm_fallback",
+                                    "phase": "question",
+                                    "message": "LLM capacity wait timed out — mock generator used for next question.",
+                                },
+                            )
                             next_question = await interviewer.generate_next_question(session.current_difficulty, previous_questions)
                         else:
                             try:
-                                next_question = await _generate_question_with_mode(interview_mode, session.current_difficulty, previous_questions)
+                                next_question = await _generate_question_with_mode(
+                                    interview_mode, session.current_difficulty, previous_questions, event_log=elog
+                                )
                             finally:
                                 llm_semaphore.release()
                     else:
-                        next_question = await _generate_question_with_mode(interview_mode, session.current_difficulty, previous_questions)
+                        next_question = await _generate_question_with_mode(
+                            interview_mode, session.current_difficulty, previous_questions, event_log=elog
+                        )
                     if evaluation.confidence.value == "HIGH" and evaluation.fallback_flag is False:
                         weakness = await db.scalar(select(WeaknessMap).where(and_(WeaknessMap.session_id == session_id, WeaknessMap.topic == question.topic)))
                         if weakness is None:

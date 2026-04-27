@@ -67,6 +67,7 @@ class EventType(str, enum.Enum):
     interview_completed = "interview_completed"
     error = "error"
     queue_delay = "queue_delay"
+    engine_notice = "engine_notice"
 
 
 class Session(Base):

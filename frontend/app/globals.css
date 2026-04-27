@@ -579,12 +579,12 @@ main.interview-page {
   flex-shrink: 0;
 }
 
-/* ~11 lines of log text; scrollbar once content exceeds this (not merged with feedback). */
+/* ~8 lines of log text; scrollbar once content exceeds this (not merged with feedback). */
 .log-panel__scroll {
   font-size: 14px;
   line-height: 1.45;
-  max-height: calc(11 * 1.45em);
-  max-height: calc(11 * 1lh);
+  max-height: calc(8 * 1.45em);
+  max-height: calc(8 * 1lh);
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-gutter: stable;
@@ -608,8 +608,8 @@ main.interview-page {
 
   .log-panel__scroll {
     font-size: 13px;
-    max-height: calc(10 * 1.45em);
-    max-height: calc(10 * 1lh);
+    max-height: calc(8 * 1.45em);
+    max-height: calc(8 * 1lh);
   }
 }
 

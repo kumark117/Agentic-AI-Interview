@@ -24,6 +24,7 @@ export type SessionEvent = {
     | "question_generated"
     | "interview_completed"
     | "queue_delay"
+    | "engine_notice"
     | "error";
   payload: Record<string, unknown>;
   created_at: string;
