@@ -585,6 +585,19 @@ main.interview-page {
   max-width: 1120px;
 }
 
+/* Reserve one line of status height so "Thinking…" does not push the grid when it appears */
+.interview-primary-status-slot {
+  min-height: 44px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.interview-primary-status-slot .card {
+  margin-bottom: 0;
+  width: 100%;
+}
+
 .interview-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

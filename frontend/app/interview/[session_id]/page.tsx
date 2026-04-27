@@ -228,7 +228,13 @@ export default function InterviewPage() {
   return (
     <main className="interview-page">
       <h1>Live Interview</h1>
-      <StatusBanner message={banner} />
+      {!isBootstrapRoute ? (
+        <div className="interview-primary-status-slot">
+          <StatusBanner message={banner} />
+        </div>
+      ) : (
+        <StatusBanner message={banner} />
+      )}
       {bootstrapError ? <StatusBanner message={bootstrapError} /> : null}
       {submitError ? <StatusBanner message={submitError} /> : null}
       {sessionRestartSuggested ? (
