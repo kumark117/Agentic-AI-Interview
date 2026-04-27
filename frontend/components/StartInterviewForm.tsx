@@ -19,7 +19,7 @@ export function StartInterviewForm() {
   const [backendService, setBackendService] = useState<string | null>(null);
   const [aboutLoading, setAboutLoading] = useState(false);
   const [aboutError, setAboutError] = useState<string | null>(null);
-  const [maxQuestionsInput, setMaxQuestionsInput] = useState("8");
+  const [maxQuestionsInput, setMaxQuestionsInput] = useState("5");
   const parsedMaxQuestions = Number(maxQuestionsInput);
   const maxQuestionsValid =
     maxQuestionsInput.trim() !== "" &&
@@ -34,7 +34,7 @@ export function StartInterviewForm() {
     experience_level: "senior",
     interview_type: "frontend_ai_fullstack",
     interview_mode: "llm",
-    max_questions: 8
+    max_questions: 5
   });
   const normalizedCandidateName = form.candidate_name.trim();
   const candidateNameAllowedPattern = /^[A-Za-z .'-]+$/;
@@ -84,7 +84,7 @@ export function StartInterviewForm() {
       return;
     }
     if (!Number.isInteger(parsedMaxQuestions) || parsedMaxQuestions < 1 || parsedMaxQuestions > 20) {
-      setError("Max Questions must be an integer between 1 and 20.");
+      setError("Max question(s) must be an integer between 1 and 20.");
       return;
     }
 
@@ -210,7 +210,7 @@ export function StartInterviewForm() {
 
           <div className="start-field">
             <label className="start-field__label" htmlFor="max_questions">
-              Max questions
+              Max question(s)
             </label>
             <input
               id="max_questions"
@@ -222,12 +222,12 @@ export function StartInterviewForm() {
               onChange={(e) => setMaxQuestionsInput(e.target.value)}
               onBlur={() => {
                 if (maxQuestionsInput.trim() === "") {
-                  setMaxQuestionsInput("8");
+                  setMaxQuestionsInput("5");
                   return;
                 }
                 const value = Number(maxQuestionsInput);
                 if (!Number.isFinite(value)) {
-                  setMaxQuestionsInput("8");
+                  setMaxQuestionsInput("5");
                   return;
                 }
                 const clamped = Math.min(20, Math.max(1, Math.trunc(value)));

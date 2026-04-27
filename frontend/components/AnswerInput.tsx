@@ -3,12 +3,15 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 export function AnswerInput({
   disabled,
   onSubmit,
-  questionKey
+  questionKey,
+  validationMode = "strict"
 }: {
   disabled: boolean;
   onSubmit: (answerText: string) => Promise<void>;
   /** When this changes (new question), the draft answer is cleared. Not cleared on submit, so the last answer stays visible until the next question or unmount. */
   questionKey: string | null;
+  /** LLM sessions: skip local letter-pattern heuristic; server runs an LLM gibberish check instead. */
+  validationMode?: "strict" | "llm";
 }) {
   const [answer, setAnswer] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -27,13 +30,18 @@ export function AnswerInput({
     const trimmed = text.trim();
     if (!trimmed) return "Answer cannot be empty.";
 
-    const lettersOnly = trimmed.replace(/[^A-Za-z]/g, "").toLowerCase();
-    if (lettersOnly.length >= 8 && new Set(lettersOnly).size <= 2) {
-      return "Answer looks invalid. Please provide a meaningful response.";
-    }
-
-    if (trimmed.length < 12) {
-      return "Answer is too short. Please add a bit more detail.";
+    if (validationMode === "strict") {
+      const lettersOnly = trimmed.replace(/[^A-Za-z]/g, "").toLowerCase();
+      if (lettersOnly.length >= 8 && new Set(lettersOnly).size <= 2) {
+        return "Answer looks invalid. Please provide a meaningful response.";
+      }
+      if (trimmed.length < 12) {
+        return "Answer is too short. Please add a bit more detail.";
+      }
+    } else {
+      if (trimmed.length < 6) {
+        return "Add at least a few characters (the server checks for gibberish in LLM mode).";
+      }
     }
 
     return null;

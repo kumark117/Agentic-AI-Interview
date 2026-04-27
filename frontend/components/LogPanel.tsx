@@ -18,7 +18,11 @@ function summarize(event: SessionEvent): string {
     const detail = event.payload.detail ? ` — ${String(event.payload.detail)}` : "";
     return msg + detail;
   }
-  if (event.event_type === "interview_completed") return String(event.payload.end_reason ?? "complete");
+  if (event.event_type === "interview_completed") {
+    const base = String(event.payload.end_reason ?? "complete");
+    const d = event.payload.detail;
+    return d ? `${base} (${String(d)})` : base;
+  }
   if (event.event_type === "error") return String(event.payload.message ?? "Error");
   return "";
 }

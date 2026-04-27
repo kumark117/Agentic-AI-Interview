@@ -151,6 +151,25 @@ class OpenAIProvider:
             source=EvaluationSource.llm,
         )
 
+    async def is_gibberish_answer(self, question_text: str, answer_text: str) -> bool:
+        """LLM-only gate: true if the answer is obvious nonsense / non-substantive (not a real attempt)."""
+        system_prompt = (
+            "You decide if a candidate's answer to a technical interview question is substantive or not. "
+            "Gibberish means: keyboard mashing, random characters, empty platitudes with zero technical content, "
+            "or an explicit refusal to engage without reasoning. A short but real technical attempt is NOT gibberish. "
+            "Return only JSON: {\"gibberish\": true} or {\"gibberish\": false}."
+        )
+        user_prompt = (
+            f"Question:\n{self._clip_text(question_text, 1200)}\n\nAnswer:\n{self._clip_text(answer_text, 2400)}"
+        )
+        payload = await self._chat_json(self.evaluator_model, system_prompt, user_prompt)
+        raw = payload.get("gibberish")
+        if isinstance(raw, bool):
+            return raw
+        if isinstance(raw, str):
+            return raw.strip().lower() in {"true", "1", "yes"}
+        return False
+
     @staticmethod
     def _clip_text(text: str, max_chars: int) -> str:
         t = text.strip()

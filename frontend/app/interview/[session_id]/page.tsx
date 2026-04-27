@@ -156,8 +156,13 @@ export default function InterviewPage() {
           setStatus("QUESTIONING");
           setBanner(null);
         } else if (event.event_type === "interview_completed") {
+          const pl = event.payload as Record<string, unknown>;
+          if (pl.detail === "gibberish_answer") {
+            setBanner("Interview ended: answer was not accepted as substantive.");
+          } else {
+            setBanner(null);
+          }
           setStatus("END");
-          setBanner(null);
           if (reportNavTimeoutRef.current != null) {
             clearTimeout(reportNavTimeoutRef.current);
           }
@@ -268,6 +273,7 @@ export default function InterviewPage() {
           <AnswerInput
             disabled={isBootstrapRoute || status !== "QUESTIONING"}
             questionKey={question?.question_id ?? null}
+            validationMode={sessionStore.interviewMode === "llm" ? "llm" : "strict"}
             onSubmit={onSubmit}
           />
         </div>

@@ -310,6 +310,56 @@ async def submit_answer(session_id: str, payload: SubmitAnswerRequest, x_session
                 if question is None or question.session_id != session_id:
                     raise HTTPException(status_code=409, detail={"error": "invalid_question", "message": "Question does not belong to this session."})
                 prev = await db.scalar(select(Evaluation.score).where(Evaluation.session_id == session_id).order_by(Evaluation.created_at.desc()).limit(1))
+
+                gibberish_abort = False
+                if interview_mode == "llm" and _llm_enabled():
+                    try:
+                        await asyncio.wait_for(llm_semaphore.acquire(), timeout=2.0)
+                    except TimeoutError:
+                        pass
+                    else:
+                        try:
+                            gibberish_abort = await llm_provider.is_gibberish_answer(question.text, payload.answer_text)
+                        except OpenAIProviderError:
+                            gibberish_abort = False
+                        finally:
+                            llm_semaphore.release()
+                if gibberish_abort:
+                    now = _now()
+                    answer_id = f"ans_{uuid.uuid4().hex[:10]}"
+                    db.add(
+                        Answer(
+                            answer_id=answer_id,
+                            session_id=session_id,
+                            question_id=payload.question_id,
+                            answer_text=payload.answer_text,
+                            created_at=now,
+                        )
+                    )
+                    session.status = SessionStatus.END
+                    session.end_reason = EndReason.manual
+                    session.updated_at = now
+                    await publish_event(
+                        db,
+                        redis_client,
+                        session_id,
+                        EventType.error,
+                        {"message": "Interview ended: answer was not accepted as substantive (LLM check)."},
+                    )
+                    await publish_event(
+                        db,
+                        redis_client,
+                        session_id,
+                        EventType.interview_completed,
+                        {"end_reason": EndReason.manual.value, "detail": "gibberish_answer"},
+                    )
+                    await db.commit()
+                    await redis_client.set(INTERVIEW_MODE_KEY.format(session_id=session_id), interview_mode, ex=60 * 60 * 24 * 7)
+                    return SubmitAnswerResponse(
+                        status="processing",
+                        message="Interview ended for non-substantive answer. See stream for details.",
+                    )
+
                 if interview_mode == "llm":
                     try:
                         await asyncio.wait_for(llm_semaphore.acquire(), timeout=2.0)
