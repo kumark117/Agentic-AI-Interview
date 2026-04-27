@@ -8,15 +8,27 @@ import { FeedbackPanel } from "../../../components/FeedbackPanel";
 import { LogPanel } from "../../../components/LogPanel";
 import { QuestionPanel } from "../../../components/QuestionPanel";
 import { StatusBanner } from "../../../components/StatusBanner";
-import { submitAnswer } from "../../../lib/api";
+import { startInterview, submitAnswer } from "../../../lib/api";
 import { useSessionStore } from "../../../lib/session-context";
 import { connectSessionStream } from "../../../lib/sse";
+import type { StartSessionRequest } from "../../../lib/types";
 import { EvaluationPayload, Question, SessionEvent } from "../../../lib/types";
+
+const PENDING_SESSION_START_KEY = "ai_interview_pending_session_start";
+/** Reserved URL segment — not a real backend session id. */
+const BOOTSTRAP_ROUTE = "_bootstrap";
+
+let interviewBootstrapInFlight: Promise<void> | null = null;
 
 export default function InterviewPage() {
   const params = useParams<{ session_id: string }>();
   const router = useRouter();
   const sessionStore = useSessionStore();
+  const sessionRef = useRef(sessionStore);
+  const routerRef = useRef(router);
+  sessionRef.current = sessionStore;
+  routerRef.current = router;
+
   const lastSeenSeqRef = useRef(0);
   const reportNavTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -26,8 +38,64 @@ export default function InterviewPage() {
   const [banner, setBanner] = useState<string | null>(null);
   const [logs, setLogs] = useState<SessionEvent[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+
+  const isBootstrapRoute = params.session_id === BOOTSTRAP_ROUTE;
 
   useEffect(() => {
+    if (params.session_id !== BOOTSTRAP_ROUTE) {
+      return;
+    }
+
+    const raw = sessionStorage.getItem(PENDING_SESSION_START_KEY);
+    if (!raw) {
+      routerRef.current.replace("/");
+      return;
+    }
+    if (interviewBootstrapInFlight) {
+      return;
+    }
+
+    let payload: StartSessionRequest;
+    try {
+      payload = JSON.parse(raw) as StartSessionRequest;
+    } catch {
+      sessionStorage.removeItem(PENDING_SESSION_START_KEY);
+      routerRef.current.replace("/");
+      return;
+    }
+
+    setBootstrapError(null);
+
+    interviewBootstrapInFlight = (async () => {
+      try {
+        const response = await startInterview(payload);
+        sessionStorage.removeItem(PENDING_SESSION_START_KEY);
+        sessionRef.current.setSession(
+          response.session_id,
+          response.session_token,
+          response.current_question,
+          payload.candidate_id,
+          payload.candidate_name.trim(),
+          payload.max_questions
+        );
+        setQuestion(response.current_question);
+        routerRef.current.replace(`/interview/${response.session_id}`);
+      } catch (e) {
+        sessionStorage.removeItem(PENDING_SESSION_START_KEY);
+        setBootstrapError((e as Error).message);
+      } finally {
+        interviewBootstrapInFlight = null;
+      }
+    })();
+    // One-shot when URL is /interview/_bootstrap; refs carry latest store/router (see setSession note above).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.session_id]);
+
+  useEffect(() => {
+    if (params.session_id === BOOTSTRAP_ROUTE) {
+      return;
+    }
     if (!sessionStore.token || !sessionStore.sessionId || sessionStore.sessionId !== params.session_id) {
       setBanner("Session token missing. Please restart from home page.");
       return;
@@ -108,10 +176,12 @@ export default function InterviewPage() {
     const normalized = String(message ?? "").toLowerCase();
     return normalized.includes("not accepting answers") || normalized.includes("session token missing");
   });
+
   return (
     <main className="interview-page">
       <h1>Live Interview</h1>
       <StatusBanner message={banner} />
+      {bootstrapError ? <StatusBanner message={bootstrapError} /> : null}
       {submitError ? <StatusBanner message={submitError} /> : null}
       {sessionRestartSuggested ? (
         <section>
@@ -130,12 +200,22 @@ export default function InterviewPage() {
       ) : null}
       <div className="interview-layout">
         <div className="interview-layout__column interview-layout__column--primary">
-          <QuestionPanel
-            question={question}
-            currentQuestionNumber={sessionStore.questionsAsked}
-            maxQuestions={sessionStore.maxQuestions}
-          />
-          <AnswerInput disabled={status !== "QUESTIONING"} onSubmit={onSubmit} />
+          {isBootstrapRoute ? (
+            <section className="question-panel">
+              <h2 className="question-panel__title">Question</h2>
+              <div className="interview-spinner-wrap" role="status" aria-live="polite" aria-label="Creating session">
+                <div className="interview-spinner" />
+                <p className="interview-spinner__caption">Creating your session…</p>
+              </div>
+            </section>
+          ) : (
+            <QuestionPanel
+              question={question}
+              currentQuestionNumber={sessionStore.questionsAsked}
+              maxQuestions={sessionStore.maxQuestions}
+            />
+          )}
+          <AnswerInput disabled={isBootstrapRoute || status !== "QUESTIONING"} onSubmit={onSubmit} />
         </div>
         <aside className="interview-layout__column interview-layout__column--log" aria-label="Log and feedback">
           <LogPanel logs={logs} />

@@ -102,7 +102,7 @@ export function StartInterviewForm() {
         setLoading(false);
         return;
       }
-      router.push("/interview/new");
+      router.push("/interview/_bootstrap");
     } catch (e) {
       setError((e as Error).message);
       setLoading(false);
