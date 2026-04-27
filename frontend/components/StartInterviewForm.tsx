@@ -33,7 +33,7 @@ export function StartInterviewForm() {
     role: "Senior React + AI Engineer",
     experience_level: "senior",
     interview_type: "frontend_ai_fullstack",
-    interview_mode: "mock",
+    interview_mode: "llm",
     max_questions: 8
   });
   const normalizedCandidateName = form.candidate_name.trim();
