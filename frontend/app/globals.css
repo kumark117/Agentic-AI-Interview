@@ -593,6 +593,11 @@ main.interview-page {
   margin-top: 4px;
 }
 
+/* After last answer: avoid layout jumping before redirect to report */
+.interview-layout.interview-layout--winding-down .interview-layout__column--primary {
+  min-height: min(52vh, 520px);
+}
+
 .interview-layout__column {
   min-width: 0;
 }
@@ -648,6 +653,10 @@ main.interview-page {
 }
 
 @media (max-width: 720px) {
+  .interview-layout.interview-layout--winding-down .interview-layout__column--primary {
+    min-height: min(42vh, 380px);
+  }
+
   .interview-layout {
     grid-template-columns: 1fr;
   }

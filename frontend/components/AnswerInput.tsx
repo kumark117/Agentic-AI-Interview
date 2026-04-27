@@ -1,14 +1,27 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 export function AnswerInput({
   disabled,
-  onSubmit
+  onSubmit,
+  questionKey
 }: {
   disabled: boolean;
   onSubmit: (answerText: string) => Promise<void>;
+  /** When this changes (new question), the draft answer is cleared. Not cleared on submit, so the last answer stays visible until the next question or unmount. */
+  questionKey: string | null;
 }) {
   const [answer, setAnswer] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const previousQuestionKey = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    const key = questionKey ?? null;
+    if (previousQuestionKey.current !== undefined && previousQuestionKey.current !== key) {
+      setAnswer("");
+      setValidationError(null);
+    }
+    previousQuestionKey.current = key;
+  }, [questionKey]);
 
   function validateAnswer(text: string): string | null {
     const trimmed = text.trim();
@@ -34,7 +47,6 @@ export function AnswerInput({
       return;
     }
     await onSubmit(answer);
-    setAnswer("");
     setValidationError(null);
   }
 

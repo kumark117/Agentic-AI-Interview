@@ -17,7 +17,7 @@ import { EvaluationPayload, Question, SessionEvent } from "../../../lib/types";
 const PENDING_SESSION_START_KEY = "ai_interview_pending_session_start";
 /** Reserved URL segment — not a real backend session id. */
 const BOOTSTRAP_ROUTE = "_bootstrap";
-const REPORT_REDIRECT_MS = 3500;
+const REPORT_REDIRECT_MS = 1500;
 /** Keep “Correct Answers Report” hint visible this long after a new question arrives (LLM mode). */
 const LLM_HINT_HOLD_MS = 8000;
 
@@ -246,7 +246,7 @@ export default function InterviewPage() {
           </button>
         </section>
       ) : null}
-      <div className="interview-layout">
+      <div className={`interview-layout${status === "END" ? " interview-layout--winding-down" : ""}`}>
         <div className="interview-layout__column interview-layout__column--primary">
           {isBootstrapRoute ? (
             <section className="question-panel">
@@ -273,7 +273,11 @@ export default function InterviewPage() {
               ) : null}
             </>
           )}
-          <AnswerInput disabled={isBootstrapRoute || status !== "QUESTIONING"} onSubmit={onSubmit} />
+          <AnswerInput
+            disabled={isBootstrapRoute || status !== "QUESTIONING"}
+            questionKey={question?.question_id ?? null}
+            onSubmit={onSubmit}
+          />
         </div>
         <aside className="interview-layout__column interview-layout__column--log" aria-label="Log and feedback">
           <LogPanel logs={logs} />
