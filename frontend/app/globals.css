@@ -494,6 +494,26 @@ main.start-page {
   border-radius: 10px;
 }
 
+/* ——— Interview bootstrap (/interview/new) ——— */
+.interview-bootstrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.interview-bootstrap__lead {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #b4c4ee;
+  margin: 12px 0 8px;
+}
+
+.interview-bootstrap__detail {
+  font-size: 14px;
+  color: #8b9ed6;
+  margin: 0;
+}
+
 /* ——— Live interview — half-width columns, log on right ——— */
 main.interview-page {
   max-width: 1120px;

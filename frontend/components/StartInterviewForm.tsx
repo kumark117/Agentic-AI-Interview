@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { getHealth, startInterview } from "../lib/api";
-import { useSessionStore } from "../lib/session-context";
+import { getHealth } from "../lib/api";
 import { StartSessionRequest } from "../lib/types";
 
 export function StartInterviewForm() {
@@ -12,7 +11,6 @@ export function StartInterviewForm() {
   const frontendVersion = "3.0";
   const releaseTag = "v3.0-LLM";
   const router = useRouter();
-  const sessionStore = useSessionStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
@@ -92,13 +90,19 @@ export function StartInterviewForm() {
 
     setLoading(true);
     try {
-      const response = await startInterview({
+      const payload = {
         ...form,
         candidate_name: normalizedCandidateName,
         max_questions: parsedMaxQuestions
-      });
-      sessionStore.setSession(response.session_id, response.session_token, response.current_question, form.candidate_id, normalizedCandidateName, parsedMaxQuestions);
-      router.push(`/interview/${response.session_id}`);
+      };
+      try {
+        sessionStorage.setItem("ai_interview_pending_session_start", JSON.stringify(payload));
+      } catch {
+        setError("Could not store session start data (browser storage may be blocked).");
+        setLoading(false);
+        return;
+      }
+      router.push("/interview/new");
     } catch (e) {
       setError((e as Error).message);
       setLoading(false);

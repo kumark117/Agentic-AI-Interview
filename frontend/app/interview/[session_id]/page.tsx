@@ -57,14 +57,14 @@ export default function InterviewPage() {
           setBanner(null);
         } else if (event.event_type === "interview_completed") {
           setStatus("END");
-          setBanner("Interview complete — opening report in 3 seconds…");
+          setBanner("Interview complete — opening report in 5 seconds…");
           if (reportNavTimeoutRef.current != null) {
             clearTimeout(reportNavTimeoutRef.current);
           }
           reportNavTimeoutRef.current = setTimeout(() => {
             reportNavTimeoutRef.current = null;
             router.push(`/report/${params.session_id}`);
-          }, 3000);
+          }, 5000);
         } else if (event.event_type === "error") {
           setBanner(String(event.payload.message ?? "An error occurred."));
         }
