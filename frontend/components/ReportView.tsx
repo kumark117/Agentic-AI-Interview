@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+
+import { reportJsonForDisplay } from "../lib/formatDisplay";
 
 export function ReportView({
   report,
@@ -14,9 +16,11 @@ export function ReportView({
 }) {
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
 
+  const reportForDisplay = useMemo(() => (report ? reportJsonForDisplay(report) : null), [report]);
+
   const copyReportJson = useCallback(async () => {
-    if (!report) return;
-    const text = JSON.stringify(report, null, 2);
+    if (!reportForDisplay) return;
+    const text = JSON.stringify(reportForDisplay, null, 2);
     try {
       await navigator.clipboard.writeText(text);
       setCopyStatus("copied");
@@ -25,7 +29,7 @@ export function ReportView({
       setCopyStatus("error");
       window.setTimeout(() => setCopyStatus("idle"), 3000);
     }
-  }, [report]);
+  }, [reportForDisplay]);
 
   if (loading) {
     return (
@@ -82,7 +86,7 @@ export function ReportView({
             <span className="report-copy-status report-copy-status--error">Copy failed — try again or select the JSON manually.</span>
           ) : null}
         </div>
-        <pre className="report-json">{JSON.stringify(report, null, 2)}</pre>
+        <pre className="report-json">{JSON.stringify(reportForDisplay!, null, 2)}</pre>
       </section>
     </main>
   );

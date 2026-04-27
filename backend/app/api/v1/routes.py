@@ -118,6 +118,12 @@ async def _evaluate_with_mode(
             return await llm_provider.evaluate_answer(question_text, answer_text, previous_score)
         except OpenAIProviderError as exc:
             last_error = str(exc)
+            logger.warning(
+                "LLM evaluation attempt %s/%s failed: %s",
+                attempt + 1,
+                attempts,
+                last_error[:500],
+            )
             if attempt + 1 < attempts:
                 await _publish_engine_notice(
                     event_log,
@@ -164,6 +170,12 @@ async def _generate_question_with_mode(
             return await llm_provider.generate_next_question(current_difficulty, previous_questions)
         except OpenAIProviderError as exc:
             last_error = str(exc)
+            logger.warning(
+                "LLM question generation attempt %s/%s failed: %s",
+                attempt + 1,
+                attempts,
+                last_error[:500],
+            )
             if attempt + 1 < attempts:
                 await _publish_engine_notice(
                     event_log,

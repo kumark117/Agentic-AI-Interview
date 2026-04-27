@@ -1,4 +1,5 @@
 import json
+import logging
 import uuid
 from dataclasses import dataclass
 
@@ -6,6 +7,9 @@ import httpx
 
 from app.models.models import Confidence, Difficulty, EvaluationSource, QuestionSource
 from app.schemas.api import GeneratedQuestion
+
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIProviderError(Exception):
@@ -49,15 +53,30 @@ class OpenAIProvider:
             ],
             "temperature": 0.2,
         }
-        async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-            response = await client.post(self.base_url, headers=headers, json=payload)
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+                response = await client.post(self.base_url, headers=headers, json=payload)
+        except httpx.TimeoutException as exc:
+            logger.warning(
+                "OpenAI chat timed out (model=%s, timeout_s=%s)",
+                model,
+                self.timeout_seconds,
+            )
+            raise OpenAIProviderError("OpenAI request timed out.") from exc
+        except httpx.RequestError as exc:
+            logger.warning("OpenAI chat transport error (model=%s): %s", model, exc)
+            raise OpenAIProviderError(f"OpenAI request failed: {exc!s}") from exc
+
         if response.status_code >= 400:
-            raise OpenAIProviderError(f"OpenAI error {response.status_code}: {response.text[:400]}")
+            snippet = response.text[:400]
+            logger.warning("OpenAI HTTP %s (model=%s): %s", response.status_code, model, snippet)
+            raise OpenAIProviderError(f"OpenAI error {response.status_code}: {snippet}")
         data = response.json()
         try:
             content = data["choices"][0]["message"]["content"]
             return json.loads(content)
         except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("OpenAI JSON parse failed (model=%s): %s", model, exc)
             raise OpenAIProviderError("Failed to parse OpenAI JSON response.") from exc
 
     async def generate_next_question(
