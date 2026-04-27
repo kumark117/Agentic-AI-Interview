@@ -39,3 +39,7 @@ You can still override advanced flags directly:
 - `AI_INTERVIEW_USE_FAKEREDIS_LOCAL`
 - `AI_INTERVIEW_AUTO_CREATE_SCHEMA`
 - `AI_INTERVIEW_DISABLE_CLEANUP_WORKER`
+
+## LLM (OpenAI-style provider)
+
+When sessions use `interview_mode: "llm"` and the API key is set, the backend calls the configured models for question generation and evaluation, with mock fallback on failure. See **`../.env.remote.example`** for `AI_INTERVIEW_LLM_*` variables. Semantic version and cut tag for ops: `AI_INTERVIEW_APP_VERSION`, `AI_INTERVIEW_RELEASE_TAG` (defaults in `app/core/config.py`).
