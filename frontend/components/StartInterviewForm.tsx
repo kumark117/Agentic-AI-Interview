@@ -118,7 +118,7 @@ export function StartInterviewForm() {
             <p className="start-hero__eyebrow">Agentic AI Interview</p>
             <h1 className="start-hero__title">Start your session</h1>
             <p className="start-hero__subtitle">
-              Choose Mock or AI LLM, set your name and length, then open the live interview with SSE updates.
+              Choose Mock or AI LLM, set your name and # of questions, then open the live interview with SSE updates.
             </p>
           </div>
           <div className="start-hero__actions">
