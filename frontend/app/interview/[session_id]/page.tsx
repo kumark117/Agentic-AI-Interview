@@ -94,37 +94,8 @@ export default function InterviewPage() {
     const normalized = String(message ?? "").toLowerCase();
     return normalized.includes("not accepting answers") || normalized.includes("session token missing");
   });
-  const questionsRemaining = sessionStore.maxQuestions != null ? Math.max(0, sessionStore.maxQuestions - sessionStore.questionsAsked) : null;
-
   return (
     <main>
-      <section
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: 10
-        }}
-      >
-        <div
-          style={{
-            border: "1px solid #2f3f7a",
-            borderRadius: 10,
-            padding: "8px 12px",
-            background: "rgba(10, 20, 52, 0.35)",
-            maxWidth: 420
-          }}
-        >
-          <div style={{ opacity: 0.85, fontSize: 13 }}>
-            <strong>Name:</strong> {sessionStore.candidateName ?? "Unknown"}
-          </div>
-          <div style={{ opacity: 0.85, fontSize: 13 }}>
-            <strong>Candidate ID:</strong> {sessionStore.candidateId ?? "Unknown"}
-          </div>
-          <div style={{ opacity: 0.95, fontSize: 13, marginTop: 6 }}>
-            <strong>Questions Remaining:</strong> {questionsRemaining ?? "--"}
-          </div>
-        </div>
-      </section>
       <h1>Live Interview</h1>
       <StatusBanner message={banner} />
       {submitError ? <StatusBanner message={submitError} /> : null}
@@ -143,7 +114,11 @@ export default function InterviewPage() {
           </button>
         </section>
       ) : null}
-      <QuestionPanel question={question} />
+      <QuestionPanel
+        question={question}
+        currentQuestionNumber={sessionStore.questionsAsked}
+        maxQuestions={sessionStore.maxQuestions}
+      />
       <AnswerInput disabled={status !== "QUESTIONING"} onSubmit={onSubmit} />
       <FeedbackPanel feedback={feedback} />
       <LogPanel logs={logs} />

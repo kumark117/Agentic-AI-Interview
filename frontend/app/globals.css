@@ -460,3 +460,34 @@ main.start-page {
   padding: 10px 20px;
   border-radius: 10px;
 }
+
+/* ——— Live interview — question panel ——— */
+.question-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.question-panel__head h2 {
+  margin: 0;
+  flex: 0 1 auto;
+}
+
+.question-panel__progress {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c5d4ff;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .question-panel__progress {
+    margin-left: 0;
+    width: 100%;
+  }
+}
