@@ -18,6 +18,7 @@ export default function InterviewPage() {
   const router = useRouter();
   const sessionStore = useSessionStore();
   const lastSeenSeqRef = useRef(0);
+  const reportNavTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [question, setQuestion] = useState<Question | null>(sessionStore.currentQuestion);
   const [feedback, setFeedback] = useState<EvaluationPayload | null>(null);
@@ -56,7 +57,14 @@ export default function InterviewPage() {
           setBanner(null);
         } else if (event.event_type === "interview_completed") {
           setStatus("END");
-          router.push(`/report/${params.session_id}`);
+          setBanner("Interview complete — opening report in 2 seconds…");
+          if (reportNavTimeoutRef.current != null) {
+            clearTimeout(reportNavTimeoutRef.current);
+          }
+          reportNavTimeoutRef.current = setTimeout(() => {
+            reportNavTimeoutRef.current = null;
+            router.push(`/report/${params.session_id}`);
+          }, 2000);
         } else if (event.event_type === "error") {
           setBanner(String(event.payload.message ?? "An error occurred."));
         }
@@ -64,7 +72,13 @@ export default function InterviewPage() {
       () => setBanner("Reconnecting...")
     );
 
-    return () => source.close();
+    return () => {
+      source.close();
+      if (reportNavTimeoutRef.current != null) {
+        clearTimeout(reportNavTimeoutRef.current);
+        reportNavTimeoutRef.current = null;
+      }
+    };
   }, [params.session_id, router, sessionStore]);
 
   async function onSubmit(answerText: string) {
