@@ -51,6 +51,7 @@ export default function InterviewPage() {
           const nextQuestion = event.payload as Question;
           setQuestion(nextQuestion);
           sessionStore.setCurrentQuestion(nextQuestion);
+          sessionStore.incrementQuestionsAsked();
           setStatus("QUESTIONING");
           setBanner(null);
         } else if (event.event_type === "interview_completed") {
@@ -93,6 +94,7 @@ export default function InterviewPage() {
     const normalized = String(message ?? "").toLowerCase();
     return normalized.includes("not accepting answers") || normalized.includes("session token missing");
   });
+  const questionsRemaining = sessionStore.maxQuestions != null ? Math.max(0, sessionStore.maxQuestions - sessionStore.questionsAsked) : null;
 
   return (
     <main>
@@ -117,6 +119,9 @@ export default function InterviewPage() {
           </div>
           <div style={{ opacity: 0.85, fontSize: 13 }}>
             <strong>Candidate ID:</strong> {sessionStore.candidateId ?? "Unknown"}
+          </div>
+          <div style={{ opacity: 0.95, fontSize: 13, marginTop: 6 }}>
+            <strong>Questions Remaining:</strong> {questionsRemaining ?? "--"}
           </div>
         </div>
       </section>

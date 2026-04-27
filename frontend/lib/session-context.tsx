@@ -10,7 +10,10 @@ type SessionStore = {
   currentQuestion: Question | null;
   candidateId: string | null;
   candidateName: string | null;
-  setSession: (sessionId: string, token: string, question: Question, candidateId: string, candidateName: string) => void;
+  maxQuestions: number | null;
+  questionsAsked: number;
+  setSession: (sessionId: string, token: string, question: Question, candidateId: string, candidateName: string, maxQuestions: number) => void;
+  incrementQuestionsAsked: () => void;
   setCurrentQuestion: (question: Question | null) => void;
   clearSession: () => void;
 };
@@ -23,6 +26,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [candidateId, setCandidateId] = useState<string | null>(null);
   const [candidateName, setCandidateName] = useState<string | null>(null);
+  const [maxQuestions, setMaxQuestions] = useState<number | null>(null);
+  const [questionsAsked, setQuestionsAsked] = useState(0);
 
   const value = useMemo<SessionStore>(
     () => ({
@@ -31,13 +36,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       currentQuestion,
       candidateId,
       candidateName,
-      setSession: (nextSessionId, nextToken, question, nextCandidateId, nextCandidateName) => {
+      maxQuestions,
+      questionsAsked,
+      setSession: (nextSessionId, nextToken, question, nextCandidateId, nextCandidateName, nextMaxQuestions) => {
         setSessionId(nextSessionId);
         setToken(nextToken);
         setCurrentQuestion(question);
         setCandidateId(nextCandidateId);
         setCandidateName(nextCandidateName);
+        setMaxQuestions(nextMaxQuestions);
+        setQuestionsAsked(1);
       },
+      incrementQuestionsAsked: () => setQuestionsAsked((prev) => prev + 1),
       setCurrentQuestion,
       clearSession: () => {
         setSessionId(null);
@@ -45,9 +55,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setCurrentQuestion(null);
         setCandidateId(null);
         setCandidateName(null);
+        setMaxQuestions(null);
+        setQuestionsAsked(0);
       }
     }),
-    [sessionId, token, currentQuestion, candidateId, candidateName]
+    [sessionId, token, currentQuestion, candidateId, candidateName, maxQuestions, questionsAsked]
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

@@ -94,7 +94,7 @@ export function StartInterviewForm() {
         candidate_name: normalizedCandidateName,
         max_questions: parsedMaxQuestions
       });
-      sessionStore.setSession(response.session_id, response.session_token, response.current_question, form.candidate_id, normalizedCandidateName);
+      sessionStore.setSession(response.session_id, response.session_token, response.current_question, form.candidate_id, normalizedCandidateName, parsedMaxQuestions);
       router.push(`/interview/${response.session_id}`);
     } catch (e) {
       setError((e as Error).message);
@@ -108,6 +108,9 @@ export function StartInterviewForm() {
       <div className="start-header-row">
         <h1 style={{ margin: 0 }}>Start Interview</h1>
         <div className="start-header-controls">
+          <button className="about-button" type="button" onClick={() => setShowAbout(true)}>
+            About
+          </button>
           <label className="engine-selector-label">
             <span>Interview Engine</span>
             <select
@@ -119,9 +122,6 @@ export function StartInterviewForm() {
               <option value="llm">AI LLM</option>
             </select>
           </label>
-          <button className="about-button" type="button" onClick={() => setShowAbout(true)}>
-            About
-          </button>
         </div>
       </div>
       <section className="start-form-section start-form-section--narrow">
