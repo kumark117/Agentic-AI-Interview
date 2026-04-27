@@ -28,6 +28,7 @@ describe("frontend api client", () => {
       role: "Senior React + AI Engineer",
       experience_level: "senior",
       interview_type: "frontend_ai_fullstack",
+      interview_mode: "mock",
       max_questions: 8
     });
 

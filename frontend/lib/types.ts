@@ -46,6 +46,7 @@ export type StartSessionRequest = {
   role: string;
   experience_level: "junior" | "mid" | "senior";
   interview_type: "frontend_ai_fullstack" | "backend_systems" | "fullstack_general" | "data_ml" | "devops";
+  interview_mode: "mock" | "llm";
   max_questions: number;
 };
 

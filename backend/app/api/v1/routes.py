@@ -25,6 +25,7 @@ from app.services.redis_client import redis_client
 router = APIRouter()
 evaluator = MockEvaluatorAgent()
 interviewer = MockInterviewerAgent()
+INTERVIEW_MODE_KEY = "session:{session_id}:interview_mode"
 
 
 def _now() -> datetime:
@@ -38,6 +39,13 @@ async def _require_session(db: AsyncSession, session_id: str, token: str | None,
     if not session or session.session_token != token:
         raise HTTPException(status_code=401, detail={"error": "unauthorized", "message": "Invalid session token"})
     return session
+
+
+async def _get_session_interview_mode(session_id: str) -> str:
+    mode = await redis_client.get(INTERVIEW_MODE_KEY.format(session_id=session_id))
+    if mode in {"mock", "llm"}:
+        return mode
+    return "mock"
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -88,12 +96,15 @@ async def create_session(payload: StartSessionRequest, request: Request, db: Asy
         )
     )
     await db.commit()
+    # Keep mode selection per-session in Redis to avoid a schema migration while introducing UI mode choice.
+    await redis_client.set(INTERVIEW_MODE_KEY.format(session_id=session_id), payload.interview_mode, ex=60 * 60 * 24)
     return StartSessionResponse(session_id=session_id, session_token=session_token, status=SessionStatus.QUESTIONING, current_question={"question_id": qid, "text": qtext, "difficulty": Difficulty.medium}, stream_url=f"/api/v1/sessions/{session_id}/stream?token={session_token}")
 
 
 @router.post("/sessions/{session_id}/answers", response_model=SubmitAnswerResponse, responses={409: {"model": ErrorResponse}, 429: {"model": ErrorResponse}, 401: {"model": ErrorResponse}})
 async def submit_answer(session_id: str, payload: SubmitAnswerRequest, x_session_token: str | None = Header(default=None), db: AsyncSession = Depends(get_db_session)) -> SubmitAnswerResponse:
     session = await _require_session(db, session_id, x_session_token)
+    interview_mode = await _get_session_interview_mode(session_id)
     if session.status != SessionStatus.QUESTIONING:
         raise HTTPException(status_code=409, detail={"error": "invalid_state", "message": "Session is not accepting answers."})
     try:
@@ -110,16 +121,19 @@ async def submit_answer(session_id: str, payload: SubmitAnswerRequest, x_session
                 if question is None or question.session_id != session_id:
                     raise HTTPException(status_code=409, detail={"error": "invalid_question", "message": "Question does not belong to this session."})
                 prev = await db.scalar(select(Evaluation.score).where(Evaluation.session_id == session_id).order_by(Evaluation.created_at.desc()).limit(1))
-                try:
-                    await asyncio.wait_for(llm_semaphore.acquire(), timeout=2.0)
-                except TimeoutError:
-                    await publish_event(db, redis_client, session_id, EventType.queue_delay, {"message": "High load (~5-7s delay)"})
-                    evaluation = await evaluator.evaluate(question.text, "", prev)
-                else:
+                if interview_mode == "llm":
                     try:
-                        evaluation = await evaluator.evaluate(question.text, payload.answer_text, prev)
-                    finally:
-                        llm_semaphore.release()
+                        await asyncio.wait_for(llm_semaphore.acquire(), timeout=2.0)
+                    except TimeoutError:
+                        await publish_event(db, redis_client, session_id, EventType.queue_delay, {"message": "High load (~5-7s delay)"})
+                        evaluation = await evaluator.evaluate(question.text, "", prev)
+                    else:
+                        try:
+                            evaluation = await evaluator.evaluate(question.text, payload.answer_text, prev)
+                        finally:
+                            llm_semaphore.release()
+                else:
+                    evaluation = await evaluator.evaluate(question.text, payload.answer_text, prev)
                 answer_id = f"ans_{uuid.uuid4().hex[:10]}"
                 db.add(Answer(answer_id=answer_id, session_id=session_id, question_id=payload.question_id, answer_text=payload.answer_text, created_at=_now()))
                 db.add(Evaluation(evaluation_id=f"eval_{uuid.uuid4().hex[:10]}", session_id=session_id, question_id=payload.question_id, answer_id=answer_id, score=evaluation.score, feedback=evaluation.feedback, confidence=evaluation.confidence, fallback_flag=evaluation.fallback_flag, source=evaluation.source, created_at=_now()))
@@ -138,16 +152,19 @@ async def submit_answer(session_id: str, payload: SubmitAnswerRequest, x_session
                             .order_by(Question.created_at.asc())
                         )
                     ).scalars().all()
-                    try:
-                        await asyncio.wait_for(llm_semaphore.acquire(), timeout=2.0)
-                    except TimeoutError:
-                        await publish_event(db, redis_client, session_id, EventType.queue_delay, {"message": "High load (~5-7s delay)"})
-                        next_question = await interviewer.generate_next_question(session.current_difficulty, previous_questions)
-                    else:
+                    if interview_mode == "llm":
                         try:
+                            await asyncio.wait_for(llm_semaphore.acquire(), timeout=2.0)
+                        except TimeoutError:
+                            await publish_event(db, redis_client, session_id, EventType.queue_delay, {"message": "High load (~5-7s delay)"})
                             next_question = await interviewer.generate_next_question(session.current_difficulty, previous_questions)
-                        finally:
-                            llm_semaphore.release()
+                        else:
+                            try:
+                                next_question = await interviewer.generate_next_question(session.current_difficulty, previous_questions)
+                            finally:
+                                llm_semaphore.release()
+                    else:
+                            next_question = await interviewer.generate_next_question(session.current_difficulty, previous_questions)
                     if evaluation.confidence.value == "HIGH" and evaluation.fallback_flag is False:
                         weakness = await db.scalar(select(WeaknessMap).where(and_(WeaknessMap.session_id == session_id, WeaknessMap.topic == question.topic)))
                         if weakness is None:

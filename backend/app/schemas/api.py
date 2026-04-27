@@ -1,6 +1,7 @@
 from datetime import datetime
 import re
 from typing import Any
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -19,6 +20,7 @@ class StartSessionRequest(BaseModel):
     role: str
     experience_level: ExperienceLevel
     interview_type: InterviewType
+    interview_mode: Literal["mock", "llm"] = "mock"
     max_questions: int = Field(ge=1, le=20)
 
     @field_validator("candidate_id", "role", mode="before")

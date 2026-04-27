@@ -33,6 +33,7 @@ export function StartInterviewForm() {
     role: "Senior React + AI Engineer",
     experience_level: "senior",
     interview_type: "frontend_ai_fullstack",
+    interview_mode: "mock",
     max_questions: 8
   });
   const normalizedCandidateName = form.candidate_name.trim();
@@ -137,6 +138,16 @@ export function StartInterviewForm() {
           Role
           <input value={form.role} readOnly />
           <p style={{ opacity: 0.75, marginTop: -8 }}>Locked for current interview template.</p>
+        </label>
+        <label>
+          Interview Engine
+          <select value={form.interview_mode} onChange={(e) => setForm((prev) => ({ ...prev, interview_mode: e.target.value as "mock" | "llm" }))}>
+            <option value="mock">Mock</option>
+            <option value="llm">AI LLM</option>
+          </select>
+          <p style={{ opacity: 0.85, marginTop: -8 }}>
+            Mode choice only. API keys and provider config stay on backend.
+          </p>
         </label>
         <label>
           Max Questions
