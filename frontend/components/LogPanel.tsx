@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { SessionEvent } from "../lib/types";
 
 function summarize(event: SessionEvent): string {
@@ -13,19 +16,29 @@ function summarize(event: SessionEvent): string {
 }
 
 export function LogPanel({ logs }: { logs: SessionEvent[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [logs]);
+
   return (
     <section className="log-panel">
       <h3>Log Panel</h3>
       {logs.length === 0 ? (
         <p>No events yet.</p>
       ) : (
-        <ul className="log-panel__list">
-          {logs.map((event) => (
-            <li key={event.event_id}>
-              [{event.event_seq}] {event.event_type} — {summarize(event)}
-            </li>
-          ))}
-        </ul>
+        <div ref={scrollRef} className="log-panel__scroll">
+          <ul className="log-panel__list">
+            {logs.map((event) => (
+              <li key={event.event_id}>
+                [{event.event_seq}] {event.event_type} — {summarize(event)}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

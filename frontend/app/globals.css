@@ -560,22 +560,37 @@ main.interview-page {
 .interview-layout__column--log {
   position: sticky;
   top: 12px;
+  align-self: start;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .interview-layout__column--log .log-panel {
   margin-bottom: 0;
+  flex-shrink: 0;
 }
 
 .interview-layout__column--log .feedback-panel {
   margin-bottom: 0;
+  flex-shrink: 0;
 }
 
-.interview-layout__column--log .log-panel__list {
-  max-height: min(calc(100vh - 320px), 520px);
+/* ~11 lines of log text; scrollbar once content exceeds this (not merged with feedback). */
+.log-panel__scroll {
+  font-size: 14px;
+  line-height: 1.45;
+  max-height: calc(11 * 1.45em);
+  max-height: calc(11 * 1lh);
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.log-panel__list {
   margin: 0;
   padding-left: 1.2rem;
 }
@@ -587,10 +602,14 @@ main.interview-page {
 
   .interview-layout__column--log {
     position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 
-  .interview-layout__column--log .log-panel__list {
-    max-height: min(220px, 32vh);
+  .log-panel__scroll {
+    font-size: 13px;
+    max-height: calc(10 * 1.45em);
+    max-height: calc(10 * 1lh);
   }
 }
 
