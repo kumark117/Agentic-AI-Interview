@@ -601,11 +601,27 @@ async def get_correct_answers_report(session_id: str, x_session_token: str | Non
             },
         )
 
-    rows = (await db.execute(select(Answer, Question, Evaluation).join(Question, Question.question_id == Answer.question_id).join(Evaluation, Evaluation.answer_id == Answer.answer_id).where(Answer.session_id == session_id).order_by(Answer.created_at.asc()))).all()
+    rows = (
+        await db.execute(
+            select(Answer, Question, Evaluation)
+            .join(Question, Question.question_id == Answer.question_id)
+            .outerjoin(Evaluation, and_(Evaluation.answer_id == Answer.answer_id, Evaluation.session_id == session_id))
+            .where(Answer.session_id == session_id)
+            .order_by(Answer.created_at.asc())
+        )
+    ).all()
     if not rows:
         return {"session_id": session_id, "interview_mode": "LLM", "generated_at": _now().isoformat(), "items": []}
 
-    turns = [(question.question_id, question.text, answer.answer_text, float(evaluation.score)) for answer, question, evaluation in rows]
+    turns = [
+        (
+            question.question_id,
+            question.text,
+            answer.answer_text,
+            float(evaluation.score) if evaluation is not None else 0.0,
+        )
+        for answer, question, evaluation in rows
+    ]
     try:
         items = await llm_provider.correct_answers_report(turns)
     except OpenAIProviderError as exc:
