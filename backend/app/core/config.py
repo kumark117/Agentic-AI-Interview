@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     lock_retry_attempts: int = 3
     lock_wait_budget_seconds: float = 2.0
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    llm_provider: str = "openai"
+    llm_model_interviewer: str = "gpt-4o-mini"
+    llm_model_evaluator: str = "gpt-4o-mini"
+    llm_api_key: str = ""
+    llm_timeout_seconds: float = 8.0
+    llm_max_retries: int = 1
     model_config = SettingsConfigDict(env_file=".env", env_prefix="AI_INTERVIEW_", extra="ignore")
 
     @property

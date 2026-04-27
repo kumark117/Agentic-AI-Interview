@@ -54,3 +54,27 @@ def test_event_seq_is_monotonic_per_session(client) -> None:
     assert seqs == sorted(seqs)
     assert seqs[0] == 1
     assert len(seqs) == len(set(seqs))
+
+
+def test_llm_mode_gracefully_falls_back_without_key(client) -> None:
+    start = client.post(
+        "/api/v1/sessions",
+        json={
+            "candidate_id": "cand_llm",
+            "candidate_name": "LLM Tester",
+            "role": "Fullstack Engineer",
+            "experience_level": "mid",
+            "interview_type": "fullstack_general",
+            "interview_mode": "llm",
+            "max_questions": 3,
+        },
+    ).json()
+    sid = start["session_id"]
+    tok = start["session_token"]
+    qid = start["current_question"]["question_id"]
+    resp = client.post(
+        f"/api/v1/sessions/{sid}/answers",
+        headers={"X-Session-Token": tok},
+        json={"question_id": qid, "answer_text": "A detailed answer used to exercise llm mode fallback."},
+    )
+    assert resp.status_code == 200
