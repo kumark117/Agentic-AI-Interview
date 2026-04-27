@@ -109,7 +109,7 @@ export default function InterviewPage() {
     return normalized.includes("not accepting answers") || normalized.includes("session token missing");
   });
   return (
-    <main>
+    <main className="interview-page">
       <h1>Live Interview</h1>
       <StatusBanner message={banner} />
       {submitError ? <StatusBanner message={submitError} /> : null}
@@ -128,19 +128,19 @@ export default function InterviewPage() {
           </button>
         </section>
       ) : null}
-      <QuestionPanel
-        question={question}
-        currentQuestionNumber={sessionStore.questionsAsked}
-        maxQuestions={sessionStore.maxQuestions}
-      />
-      <AnswerInput disabled={status !== "QUESTIONING"} onSubmit={onSubmit} />
-      <div className="interview-split-row">
-        <div className="interview-split-row__col">
+      <div className="interview-layout">
+        <div className="interview-layout__column interview-layout__column--primary">
+          <QuestionPanel
+            question={question}
+            currentQuestionNumber={sessionStore.questionsAsked}
+            maxQuestions={sessionStore.maxQuestions}
+          />
+          <AnswerInput disabled={status !== "QUESTIONING"} onSubmit={onSubmit} />
           <FeedbackPanel feedback={feedback} />
         </div>
-        <div className="interview-split-row__col">
+        <aside className="interview-layout__column interview-layout__column--log" aria-label="Session event log">
           <LogPanel logs={logs} />
-        </div>
+        </aside>
       </div>
     </main>
   );
