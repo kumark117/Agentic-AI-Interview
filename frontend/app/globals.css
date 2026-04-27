@@ -46,6 +46,39 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.report-json-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 8px;
+}
+
+.report-json-toolbar__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #a8b8e6;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-copy-btn {
+  width: auto;
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.report-copy-status {
+  font-size: 13px;
+  color: #8fd99a;
+}
+
+.report-copy-status--error {
+  color: #ff9a9a;
+}
+
 .report-section {
   overflow-x: auto;
 }

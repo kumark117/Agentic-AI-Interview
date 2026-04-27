@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useCallback, useState } from "react";
 
 export function ReportView({
   report,
@@ -9,6 +12,21 @@ export function ReportView({
   loading: boolean;
   error: string | null;
 }) {
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
+
+  const copyReportJson = useCallback(async () => {
+    if (!report) return;
+    const text = JSON.stringify(report, null, 2);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyStatus("copied");
+      window.setTimeout(() => setCopyStatus("idle"), 2000);
+    } catch {
+      setCopyStatus("error");
+      window.setTimeout(() => setCopyStatus("idle"), 3000);
+    }
+  }, [report]);
+
   if (loading) return <main>Loading report...</main>;
   if (error) return <main>{error}</main>;
   if (!report) return <main>No report found.</main>;
@@ -45,6 +63,16 @@ export function ReportView({
         </section>
       )}
       <section className="report-section">
+        <div className="report-json-toolbar">
+          <span className="report-json-toolbar__label">Report JSON</span>
+          <button type="button" className="report-copy-btn" onClick={() => void copyReportJson()}>
+            Copy to clipboard
+          </button>
+          {copyStatus === "copied" ? <span className="report-copy-status">Copied.</span> : null}
+          {copyStatus === "error" ? (
+            <span className="report-copy-status report-copy-status--error">Copy failed — try again or select the JSON manually.</span>
+          ) : null}
+        </div>
         <pre className="report-json">{JSON.stringify(report, null, 2)}</pre>
       </section>
     </main>
