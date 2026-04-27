@@ -2,7 +2,7 @@ import { EvaluationPayload } from "../lib/types";
 
 export function FeedbackPanel({ feedback }: { feedback: EvaluationPayload | null }) {
   return (
-    <section>
+    <section className="feedback-panel">
       <h3>Latest Feedback</h3>
       {!feedback ? (
         <p>No feedback yet.</p>

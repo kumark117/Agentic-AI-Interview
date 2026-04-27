@@ -9,17 +9,14 @@ export function QuestionPanel({
   currentQuestionNumber: number;
   maxQuestions: number | null;
 }) {
-  const progressLabel =
+  const title =
     maxQuestions != null && maxQuestions > 0
-      ? `Current question: ${currentQuestionNumber} / ${maxQuestions}`
-      : null;
+      ? `Question ${currentQuestionNumber} / ${maxQuestions}`
+      : "Question";
 
   return (
-    <section>
-      <div className="question-panel__head">
-        <h2>Question</h2>
-        {progressLabel ? <span className="question-panel__progress">{progressLabel}</span> : null}
-      </div>
+    <section className="question-panel">
+      <h2 className="question-panel__title">{title}</h2>
       {question ? (
         <>
           <p>{question.text}</p>

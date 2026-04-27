@@ -120,8 +120,14 @@ export default function InterviewPage() {
         maxQuestions={sessionStore.maxQuestions}
       />
       <AnswerInput disabled={status !== "QUESTIONING"} onSubmit={onSubmit} />
-      <FeedbackPanel feedback={feedback} />
-      <LogPanel logs={logs} />
+      <div className="interview-split-row">
+        <div className="interview-split-row__col">
+          <FeedbackPanel feedback={feedback} />
+        </div>
+        <div className="interview-split-row__col">
+          <LogPanel logs={logs} />
+        </div>
+      </div>
     </main>
   );
 }

@@ -14,12 +14,12 @@ function summarize(event: SessionEvent): string {
 
 export function LogPanel({ logs }: { logs: SessionEvent[] }) {
   return (
-    <section>
+    <section className="log-panel">
       <h3>Log Panel</h3>
       {logs.length === 0 ? (
         <p>No events yet.</p>
       ) : (
-        <ul>
+        <ul className="log-panel__list">
           {logs.map((event) => (
             <li key={event.event_id}>
               [{event.event_seq}] {event.event_type} — {summarize(event)}
