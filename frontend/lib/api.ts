@@ -1,4 +1,4 @@
-import { StartSessionRequest, StartSessionResponse } from "./types";
+import { HealthResponse, StartSessionRequest, StartSessionResponse } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000/api/v1";
 
@@ -44,6 +44,14 @@ export async function getReport(sessionId: string, token: string): Promise<Recor
   });
   if (!response.ok) {
     throw new Error("Failed to fetch report.");
+  }
+  return response.json();
+}
+
+export async function getHealth(): Promise<HealthResponse> {
+  const response = await fetch(`${API_BASE}/health`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch backend health.");
   }
   return response.json();
 }

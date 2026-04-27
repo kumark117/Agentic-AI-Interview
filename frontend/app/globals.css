@@ -98,3 +98,33 @@ button:disabled {
 .start-form-button {
   max-width: 320px;
 }
+
+.start-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.about-button {
+  width: auto;
+  margin: 0;
+  padding: 8px 14px;
+}
+
+.about-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 8, 20, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.about-modal-card {
+  width: min(680px, 100%);
+  margin: 0;
+}

@@ -56,3 +56,9 @@ export type StartSessionResponse = {
   current_question: Question;
   stream_url: string;
 };
+
+export type HealthResponse = {
+  status: string;
+  service: string;
+  version: string;
+};

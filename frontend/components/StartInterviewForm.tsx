@@ -1,17 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { startInterview } from "../lib/api";
+import { getHealth, startInterview } from "../lib/api";
 import { useSessionStore } from "../lib/session-context";
 import { StartSessionRequest } from "../lib/types";
 
 export function StartInterviewForm() {
+  const productVersion = "5.0";
+  const frontendVersion = "0.1.0";
   const router = useRouter();
   const sessionStore = useSessionStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAbout, setShowAbout] = useState(false);
+  const [backendVersion, setBackendVersion] = useState<string | null>(null);
+  const [backendService, setBackendService] = useState<string | null>(null);
+  const [aboutLoading, setAboutLoading] = useState(false);
+  const [aboutError, setAboutError] = useState<string | null>(null);
   const [maxQuestionsInput, setMaxQuestionsInput] = useState("8");
   const parsedMaxQuestions = Number(maxQuestionsInput);
   const maxQuestionsValid =
@@ -36,6 +43,33 @@ export function StartInterviewForm() {
     normalizedCandidateName.length >= 2 &&
     normalizedCandidateName.length <= 80 &&
     candidateNameCharsetValid;
+
+  useEffect(() => {
+    if (!showAbout) return;
+
+    setAboutError(null);
+    setAboutLoading(true);
+    getHealth()
+      .then((health) => {
+        setBackendVersion(health.version);
+        setBackendService(health.service);
+      })
+      .catch(() => {
+        setAboutError("Unable to fetch backend version.");
+      })
+      .finally(() => setAboutLoading(false));
+  }, [showAbout]);
+
+  useEffect(() => {
+    if (!showAbout) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowAbout(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showAbout]);
 
   async function onStart() {
     setError(null);
@@ -70,7 +104,12 @@ export function StartInterviewForm() {
 
   return (
     <main>
-      <h1>Start Interview</h1>
+      <div className="start-header-row">
+        <h1 style={{ margin: 0 }}>Start Interview</h1>
+        <button className="about-button" type="button" onClick={() => setShowAbout(true)}>
+          About
+        </button>
+      </div>
       <section className="start-form-section">
         <label>
           Candidate ID
@@ -132,6 +171,39 @@ export function StartInterviewForm() {
         </button>
         {error ? <p>{error}</p> : null}
       </section>
+      {showAbout ? (
+        <div className="about-modal-backdrop" role="presentation" onClick={() => setShowAbout(false)}>
+          <section className="about-modal-card" role="dialog" aria-modal="true" aria-label="About this product" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0 }}>About This Product</h2>
+            <p>
+              AI Agentic Interview is a fullstack interview simulator with a Next.js frontend and a FastAPI backend.
+              It runs adaptive question flow, answer evaluation, and live event streaming for realistic interview
+              sessions.
+            </p>
+            <p style={{ marginBottom: 6 }}>
+              <strong>Tech:</strong> Next.js, React, TypeScript, FastAPI, PostgreSQL, Redis, SSE
+            </p>
+            <p style={{ marginTop: 0 }}>
+              <strong>UI Version:</strong> {frontendVersion}
+            </p>
+            <p style={{ marginTop: 0, marginBottom: 6 }}>
+              <strong>Backend Version:</strong> {aboutLoading ? "Checking..." : backendVersion ?? "Unavailable"}
+            </p>
+            {backendService ? (
+              <p style={{ marginTop: 0 }}>
+                <strong>Backend Service:</strong> {backendService}
+              </p>
+            ) : null}
+            <p style={{ marginTop: 0 }}>
+              <strong>Product Version:</strong> {productVersion}
+            </p>
+            {aboutError ? <p style={{ color: "#ff8a8a", marginTop: 0 }}>{aboutError}</p> : null}
+            <button type="button" onClick={() => setShowAbout(false)}>
+              Close
+            </button>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }
