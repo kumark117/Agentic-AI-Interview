@@ -136,10 +136,10 @@ export default function InterviewPage() {
             maxQuestions={sessionStore.maxQuestions}
           />
           <AnswerInput disabled={status !== "QUESTIONING"} onSubmit={onSubmit} />
-          <FeedbackPanel feedback={feedback} />
         </div>
-        <aside className="interview-layout__column interview-layout__column--log" aria-label="Session event log">
+        <aside className="interview-layout__column interview-layout__column--log" aria-label="Log and feedback">
           <LogPanel logs={logs} />
+          <FeedbackPanel feedback={feedback} />
         </aside>
       </div>
     </main>

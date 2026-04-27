@@ -101,7 +101,6 @@ export function StartInterviewForm() {
       router.push(`/interview/${response.session_id}`);
     } catch (e) {
       setError((e as Error).message);
-    } finally {
       setLoading(false);
     }
   }

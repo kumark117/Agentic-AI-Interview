@@ -526,14 +526,21 @@ main.interview-page {
 .interview-layout__column--log {
   position: sticky;
   top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .interview-layout__column--log .log-panel {
   margin-bottom: 0;
 }
 
+.interview-layout__column--log .feedback-panel {
+  margin-bottom: 0;
+}
+
 .interview-layout__column--log .log-panel__list {
-  max-height: min(calc(100vh - 120px), 720px);
+  max-height: min(calc(100vh - 320px), 520px);
   overflow-y: auto;
   margin: 0;
   padding-left: 1.2rem;
@@ -549,7 +556,7 @@ main.interview-page {
   }
 
   .interview-layout__column--log .log-panel__list {
-    max-height: min(280px, 40vh);
+    max-height: min(220px, 32vh);
   }
 }
 
