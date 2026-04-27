@@ -545,6 +545,24 @@ main.start-page {
   max-width: 22em;
 }
 
+.interview-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #9aacd8;
+  max-width: 38em;
+}
+
+.interview-hint--below-spinner {
+  margin-top: 4px;
+  padding: 0 12px 8px;
+  text-align: center;
+}
+
+.interview-hint--below-question {
+  margin-top: 10px;
+}
+
 /* ——— Live interview — half-width columns, log on right ——— */
 main.interview-page {
   max-width: 1120px;

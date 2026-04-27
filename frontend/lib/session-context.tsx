@@ -12,7 +12,16 @@ type SessionStore = {
   candidateName: string | null;
   maxQuestions: number | null;
   questionsAsked: number;
-  setSession: (sessionId: string, token: string, question: Question, candidateId: string, candidateName: string, maxQuestions: number) => void;
+  interviewMode: "llm" | "mock" | null;
+  setSession: (
+    sessionId: string,
+    token: string,
+    question: Question,
+    candidateId: string,
+    candidateName: string,
+    maxQuestions: number,
+    interviewMode?: "llm" | "mock"
+  ) => void;
   incrementQuestionsAsked: () => void;
   setCurrentQuestion: (question: Question | null) => void;
   clearSession: () => void;
@@ -28,6 +37,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [candidateName, setCandidateName] = useState<string | null>(null);
   const [maxQuestions, setMaxQuestions] = useState<number | null>(null);
   const [questionsAsked, setQuestionsAsked] = useState(0);
+  const [interviewMode, setInterviewMode] = useState<"llm" | "mock" | null>(null);
 
   const value = useMemo<SessionStore>(
     () => ({
@@ -38,7 +48,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       candidateName,
       maxQuestions,
       questionsAsked,
-      setSession: (nextSessionId, nextToken, question, nextCandidateId, nextCandidateName, nextMaxQuestions) => {
+      interviewMode,
+      setSession: (nextSessionId, nextToken, question, nextCandidateId, nextCandidateName, nextMaxQuestions, nextInterviewMode) => {
         setSessionId(nextSessionId);
         setToken(nextToken);
         setCurrentQuestion(question);
@@ -46,6 +57,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setCandidateName(nextCandidateName);
         setMaxQuestions(nextMaxQuestions);
         setQuestionsAsked(1);
+        setInterviewMode(nextInterviewMode ?? null);
       },
       incrementQuestionsAsked: () => setQuestionsAsked((prev) => prev + 1),
       setCurrentQuestion,
@@ -57,9 +69,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setCandidateName(null);
         setMaxQuestions(null);
         setQuestionsAsked(0);
+        setInterviewMode(null);
       }
     }),
-    [sessionId, token, currentQuestion, candidateId, candidateName, maxQuestions, questionsAsked]
+    [sessionId, token, currentQuestion, candidateId, candidateName, maxQuestions, questionsAsked, interviewMode]
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

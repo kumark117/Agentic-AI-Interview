@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { AnswerInput } from "../../../components/AnswerInput";
@@ -43,6 +43,25 @@ export default function InterviewPage() {
 
   const isBootstrapRoute = params.session_id === BOOTSTRAP_ROUTE;
 
+  const pendingBootstrapIsLlm = useMemo(() => {
+    if (typeof window === "undefined" || !isBootstrapRoute) return false;
+    const raw = sessionStorage.getItem(PENDING_SESSION_START_KEY);
+    if (!raw) return false;
+    try {
+      const p = JSON.parse(raw) as { interview_mode?: string };
+      return p.interview_mode === "llm";
+    } catch {
+      return false;
+    }
+  }, [isBootstrapRoute]);
+
+  const llmEndReportHint = (
+    <>
+      At the end of the interview, open the Interview Report — you can run <strong>Correct Answers Report</strong> there for
+      LLM-written reference solutions.
+    </>
+  );
+
   useEffect(() => {
     if (params.session_id !== BOOTSTRAP_ROUTE) {
       return;
@@ -78,7 +97,8 @@ export default function InterviewPage() {
           response.current_question,
           payload.candidate_id,
           payload.candidate_name.trim(),
-          payload.max_questions
+          payload.max_questions,
+          payload.interview_mode
         );
         setQuestion(response.current_question);
         routerRef.current.replace(`/interview/${response.session_id}`);
@@ -208,13 +228,19 @@ export default function InterviewPage() {
                 <div className="interview-spinner" />
                 <p className="interview-spinner__caption">Creating your session…</p>
               </div>
+              {pendingBootstrapIsLlm ? <p className="interview-hint interview-hint--below-spinner">{llmEndReportHint}</p> : null}
             </section>
           ) : (
-            <QuestionPanel
-              question={question}
-              currentQuestionNumber={sessionStore.questionsAsked}
-              maxQuestions={sessionStore.maxQuestions}
-            />
+            <>
+              <QuestionPanel
+                question={question}
+                currentQuestionNumber={sessionStore.questionsAsked}
+                maxQuestions={sessionStore.maxQuestions}
+              />
+              {sessionStore.interviewMode === "llm" && status === "PROCESSING" ? (
+                <p className="interview-hint interview-hint--below-question">{llmEndReportHint}</p>
+              ) : null}
+            </>
           )}
           <AnswerInput disabled={isBootstrapRoute || status !== "QUESTIONING"} onSubmit={onSubmit} />
         </div>
