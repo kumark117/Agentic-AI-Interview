@@ -106,58 +106,96 @@ export function StartInterviewForm() {
     }
   }
 
+  const nameInputClass =
+    "start-input" + (!candidateNameValid && normalizedCandidateName.length > 0 ? " start-input--error" : "");
+  const maxQInputClass = "start-input" + (!maxQuestionsValid ? " start-input--error" : "");
+
   return (
-    <main>
-      <div className="start-header-row">
-        <h1 style={{ margin: 0 }}>Start Interview</h1>
-        <div className="start-header-controls">
-          <button className="about-button" type="button" onClick={() => setShowAbout(true)}>
-            About
-          </button>
-          <label className="engine-selector-label">
-            <span>Interview Engine</span>
-            <select
-              className="engine-selector"
-              value={form.interview_mode}
-              onChange={(e) => setForm((prev) => ({ ...prev, interview_mode: e.target.value as "mock" | "llm" }))}
+    <main className="start-page">
+      <header className="start-hero">
+        <p className="start-hero__eyebrow">Agentic AI Interview</p>
+        <h1 className="start-hero__title">Start your session</h1>
+        <p className="start-hero__subtitle">
+          Configure the demo profile, pick mock or live LLM scoring, then jump into the adaptive interview flow with
+          live SSE updates.
+        </p>
+      </header>
+
+      <div className="start-toolbar">
+        <button className="start-toolbar__about" type="button" onClick={() => setShowAbout(true)}>
+          About this build
+        </button>
+        <div className="start-engine" role="group" aria-label="Interview engine">
+          <span className="start-engine__label">Engine</span>
+          <div className="start-engine__toggle">
+            <button
+              type="button"
+              className={`start-engine__option${form.interview_mode === "mock" ? " start-engine__option--active" : ""}`}
+              aria-pressed={form.interview_mode === "mock"}
+              onClick={() => setForm((prev) => ({ ...prev, interview_mode: "mock" }))}
             >
-              <option value="mock">Mock</option>
-              <option value="llm">AI LLM</option>
-            </select>
-          </label>
+              Mock
+            </button>
+            <button
+              type="button"
+              className={`start-engine__option${form.interview_mode === "llm" ? " start-engine__option--active" : ""}`}
+              aria-pressed={form.interview_mode === "llm"}
+              onClick={() => setForm((prev) => ({ ...prev, interview_mode: "llm" }))}
+            >
+              AI LLM
+            </button>
+          </div>
         </div>
       </div>
-      <section className="start-form-section start-form-section--narrow">
-        <label>
-          Candidate ID
-          <p style={{ marginTop: 8, marginBottom: 12 }}>{form.candidate_id}</p>
-          <p style={{ opacity: 0.75, marginTop: -8 }}>Auto-assigned for this demo form.</p>
-        </label>
-        <label>
-          Candidate Name
+
+      <section className="start-form-card" aria-labelledby="start-form-heading">
+        <h2 id="start-form-heading" className="start-form-card__title">
+          Session setup
+        </h2>
+
+        <div className="start-field">
+          <span className="start-field__label">Candidate ID</span>
+          <div className="start-field__row">
+            <span className="start-badge">{form.candidate_id}</span>
+          </div>
+          <p className="start-field__hint">Auto-assigned for this demo — no edit required.</p>
+        </div>
+
+        <div className="start-field">
+          <label className="start-field__label" htmlFor="candidate_name">
+            Candidate name
+          </label>
           <input
+            id="candidate_name"
+            className={nameInputClass}
             value={form.candidate_name}
             maxLength={80}
+            autoComplete="name"
             onChange={(e) => setForm((prev) => ({ ...prev, candidate_name: e.target.value }))}
-            style={!candidateNameValid ? { borderColor: "#ff4d4f", boxShadow: "0 0 0 1px #ff4d4f" } : undefined}
           />
           {!candidateNameCharsetValid ? (
-            <p style={{ color: "#ff8a8a", marginTop: -6 }}>
-              Allowed: letters, spaces, apostrophe ('), hyphen (-), dot (.).
-            </p>
+            <p className="start-field__error">Use letters, spaces, apostrophe (&apos;), hyphen (-), and dot (.) only.</p>
           ) : null}
           {candidateNameCharsetValid && !candidateNameValid ? (
-            <p style={{ color: "#ff8a8a", marginTop: -6 }}>Name must be 2 to 80 characters.</p>
+            <p className="start-field__error">Name must be between 2 and 80 characters.</p>
           ) : null}
-        </label>
-        <label>
-          Role
-          <input value={form.role} readOnly />
-          <p style={{ opacity: 0.75, marginTop: -8 }}>Locked for current interview template.</p>
-        </label>
-        <label>
-          Max Questions
+        </div>
+
+        <div className="start-field">
+          <label className="start-field__label" htmlFor="role">
+            Role (template)
+          </label>
+          <input id="role" className="start-input start-input--readonly" value={form.role} readOnly tabIndex={-1} />
+          <p className="start-field__hint">Locked for the current interview track — swap in code when you add tracks.</p>
+        </div>
+
+        <div className="start-field">
+          <label className="start-field__label" htmlFor="max_questions">
+            Max questions
+          </label>
           <input
+            id="max_questions"
+            className={maxQInputClass}
             type="number"
             min={1}
             max={20}
@@ -176,18 +214,19 @@ export function StartInterviewForm() {
               const clamped = Math.min(20, Math.max(1, Math.trunc(value)));
               setMaxQuestionsInput(String(clamped));
             }}
-            style={!maxQuestionsValid ? { borderColor: "#ff4d4f", boxShadow: "0 0 0 1px #ff4d4f" } : undefined}
           />
-          {!maxQuestionsValid ? <p style={{ color: "#ff8a8a", marginTop: -6 }}>Enter an integer between 1 and 20.</p> : null}
-          <p style={{ opacity: 0.85, marginTop: 0 }}>
-            Applied only when starting a new interview session.
-          </p>
-        </label>
-        <button className="start-form-button" type="button" onClick={onStart} disabled={loading}>
-          {loading ? "Starting..." : "Start Interview"}
-        </button>
-        {error ? <p>{error}</p> : null}
+          {!maxQuestionsValid ? <p className="start-field__error">Enter a whole number from 1 to 20.</p> : null}
+          <p className="start-field__hint">Session length cap — applied when you start (not mid-session).</p>
+        </div>
+
+        <div className="start-cta-wrap">
+          <button className="start-cta" type="button" onClick={onStart} disabled={loading}>
+            {loading ? "Starting session…" : "Start interview"}
+          </button>
+          {error ? <div className="start-alert start-alert--error">{error}</div> : null}
+        </div>
       </section>
+
       {showAbout ? (
         <div className="about-modal-backdrop" role="presentation" onClick={() => setShowAbout(false)}>
           <section className="about-modal-card" role="dialog" aria-modal="true" aria-label="About this product" onClick={(e) => e.stopPropagation()}>
