@@ -99,12 +99,36 @@ button:disabled {
   max-width: 320px;
 }
 
+.start-form-section--narrow {
+  max-width: 680px;
+}
+
 .start-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.start-header-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.engine-selector-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.engine-selector {
+  width: 140px;
+  margin: 6px 0 0;
+  padding: 8px;
 }
 
 .about-button {
