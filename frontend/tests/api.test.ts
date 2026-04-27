@@ -42,14 +42,15 @@ describe("frontend api client", () => {
   it("returns backend health payload", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: vi.fn().mockResolvedValue({ status: "ok", service: "ai-agentic-interview", version: "5.0" })
+      json: vi.fn().mockResolvedValue({ status: "ok", service: "ai-agentic-interview", version: "3.0", release_tag: "v3.0-LLM" })
     });
     vi.stubGlobal("fetch", fetchMock);
 
     const health = await getHealth();
 
     expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/api/v1/health");
-    expect(health.version).toBe("5.0");
+    expect(health.version).toBe("3.0");
+    expect(health.release_tag).toBe("v3.0-LLM");
   });
 
   it("throws parsed message when answer submit fails", async () => {

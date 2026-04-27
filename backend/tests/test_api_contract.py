@@ -9,7 +9,10 @@ from app.api.v1 import routes as routes_module
 def test_health_endpoint(client) -> None:
     response = client.get("/api/v1/health")
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["version"] == "3.0"
+    assert body["release_tag"] == "v3.0-LLM"
 
 
 def test_missing_token_returns_401_on_answer(client) -> None:

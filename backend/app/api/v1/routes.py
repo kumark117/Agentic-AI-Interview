@@ -115,7 +115,7 @@ async def _generate_question_with_mode(interview_mode: str, current_difficulty: 
 
 @router.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
-    return HealthResponse(status="ok", service=settings.app_name, version=settings.app_version)
+    return HealthResponse(status="ok", service=settings.app_name, version=settings.app_version, release_tag=settings.release_tag)
 
 
 @router.post("/sessions", response_model=StartSessionResponse)
@@ -162,7 +162,7 @@ async def create_session(payload: StartSessionRequest, request: Request, db: Asy
     )
     await db.commit()
     # Keep mode selection per-session in Redis to avoid a schema migration while introducing UI mode choice.
-    await redis_client.set(INTERVIEW_MODE_KEY.format(session_id=session_id), payload.interview_mode, ex=60 * 60 * 24)
+    await redis_client.set(INTERVIEW_MODE_KEY.format(session_id=session_id), payload.interview_mode, ex=60 * 60 * 24 * 7)
     return StartSessionResponse(session_id=session_id, session_token=session_token, status=SessionStatus.QUESTIONING, current_question={"question_id": qid, "text": qtext, "difficulty": Difficulty.medium}, stream_url=f"/api/v1/sessions/{session_id}/stream?token={session_token}")
 
 
@@ -245,6 +245,7 @@ async def submit_answer(session_id: str, payload: SubmitAnswerRequest, x_session
                     session.updated_at = _now()
                     await publish_event(db, redis_client, session_id, EventType.question_generated, {"question_id": next_question.question_id, "text": next_question.text, "difficulty": next_question.difficulty.value})
                 await db.commit()
+                await redis_client.set(INTERVIEW_MODE_KEY.format(session_id=session_id), interview_mode, ex=60 * 60 * 24 * 7)
             except IntegrityError:
                 await db.rollback()
                 raise HTTPException(status_code=409, detail={"error": "answer_already_submitted", "message": f"An answer for question {payload.question_id} has already been submitted."})
@@ -339,7 +340,19 @@ async def get_final_report(session_id: str, x_session_token: str | None = Header
         interviewer_used_llm = interviewer_used_llm or question.source == QuestionSource.interviewer_agent
         evaluator_used_llm = evaluator_used_llm or evaluation.source == EvaluationSource.llm
         evaluator_fallback_used = evaluator_fallback_used or evaluation.fallback_flag
-        results.append({"question_id": question.question_id, "question": question.text, "answer": answer.answer_text, "score": evaluation.score, "confidence": evaluation.confidence.value, "feedback": evaluation.feedback})
+        results.append(
+            {
+                "question_id": question.question_id,
+                "question": question.text,
+                "answer": answer.answer_text,
+                "score": evaluation.score,
+                "confidence": evaluation.confidence.value,
+                "feedback": evaluation.feedback,
+                "question_source": question.source.value,
+                "evaluation_source": evaluation.source.value,
+                "fallback_flag": evaluation.fallback_flag,
+            }
+        )
     overall = round(total / len(results), 2) if results else 0.0
     weighted = round(weighted_total / den, 2) if den else 0.0
     is_complete = session.end_reason in {EndReason.candidate_completed, EndReason.max_questions_reached}

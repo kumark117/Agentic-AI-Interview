@@ -8,14 +8,16 @@ import { useSessionStore } from "../lib/session-context";
 import { StartSessionRequest } from "../lib/types";
 
 export function StartInterviewForm() {
-  const productVersion = "2.1";
-  const frontendVersion = "2.1";
+  const productVersion = "3.0";
+  const frontendVersion = "3.0";
+  const releaseTag = "v3.0-LLM";
   const router = useRouter();
   const sessionStore = useSessionStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAbout, setShowAbout] = useState(false);
   const [backendVersion, setBackendVersion] = useState<string | null>(null);
+  const [backendReleaseTag, setBackendReleaseTag] = useState<string | null>(null);
   const [backendService, setBackendService] = useState<string | null>(null);
   const [aboutLoading, setAboutLoading] = useState(false);
   const [aboutError, setAboutError] = useState<string | null>(null);
@@ -53,6 +55,7 @@ export function StartInterviewForm() {
     getHealth()
       .then((health) => {
         setBackendVersion(health.version);
+        setBackendReleaseTag(health.release_tag);
         setBackendService(health.service);
       })
       .catch(() => {
@@ -210,6 +213,12 @@ export function StartInterviewForm() {
             ) : null}
             <p style={{ marginTop: 0 }}>
               <strong>Product Version:</strong> {productVersion}
+            </p>
+            <p style={{ marginTop: 0 }}>
+              <strong>Release tag (UI):</strong> {releaseTag}
+            </p>
+            <p style={{ marginTop: 0 }}>
+              <strong>Release tag (API):</strong> {aboutLoading ? "Checking..." : backendReleaseTag ?? "—"}
             </p>
             {aboutError ? <p style={{ color: "#ff8a8a", marginTop: 0 }}>{aboutError}</p> : null}
             <button type="button" onClick={() => setShowAbout(false)}>

@@ -3,7 +3,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "ai-agentic-interview"
-    app_version: str = "2.1"
+    app_version: str = "3.0"
+    release_tag: str = "v3.0-LLM"
     api_prefix: str = "/api/v1"
     mode: str = "local-lite"
     postgres_dsn: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/ai_agentic_interview"

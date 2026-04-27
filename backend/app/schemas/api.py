@@ -82,6 +82,7 @@ class HealthResponse(BaseModel):
     status: str
     service: str
     version: str
+    release_tag: str
 
 
 class GeneratedQuestion(BaseModel):
