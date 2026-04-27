@@ -46,12 +46,21 @@ export function ReportView({
 
   const runtime = report.runtime as Record<string, unknown> | undefined;
 
+  const showCorrectAnswers = runtime && String(runtime.selected_mode) === "LLM";
+
   return (
     <main>
       <h1>Interview Report</h1>
-      <Link href="/" className="report-home-link">
-        New Session
-      </Link>
+      <div className="report-toolbar">
+        <Link href="/" className="report-home-link">
+          New Session
+        </Link>
+        {showCorrectAnswers ? (
+          <Link href={`/report/${String(report.session_id)}/correct-answers`} className="report-home-link report-home-link--secondary">
+            Correct Answers Report (LLM)
+          </Link>
+        ) : null}
+      </div>
       {report.is_complete === false ? <p>Partial report — interview ended before completion.</p> : null}
       {runtime ? (
         <section className="card" style={{ marginBottom: 14 }}>

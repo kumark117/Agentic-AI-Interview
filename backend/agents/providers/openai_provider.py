@@ -140,3 +140,67 @@ class OpenAIProvider:
             fallback_flag=False,
             source=EvaluationSource.llm,
         )
+
+    @staticmethod
+    def _clip_text(text: str, max_chars: int) -> str:
+        t = text.strip()
+        if len(t) <= max_chars:
+            return t
+        return t[: max_chars - 3] + "..."
+
+    async def correct_answers_report(
+        self,
+        turns: list[tuple[str, str, str, float]],
+    ) -> list[dict[str, str | float]]:
+        """One batched LLM call: for each answered question, produce a strong reference answer."""
+        if not turns:
+            return []
+
+        system_prompt = (
+            "You are a senior technical interviewer. For each interview turn, write a concise but complete "
+            "reference answer a strong candidate could give — not repeating the candidate's wording, but "
+            "covering the key technical points, tradeoffs, and examples where relevant. "
+            "Return only JSON with key \"items\": an array of objects with exactly these keys: "
+            "question_id (string, must match input), reference_answer (string). "
+            "Include one object per input turn, same order as given."
+        )
+        lines: list[str] = []
+        for qid, qtext, atext, score in turns:
+            lines.append(
+                json.dumps(
+                    {
+                        "question_id": qid,
+                        "question": self._clip_text(qtext, 900),
+                        "candidate_answer": self._clip_text(atext, 1200),
+                        "score_received": score,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+        user_prompt = "Turns (JSON lines, one per question):\n" + "\n".join(lines)
+        payload = await self._chat_json(self.evaluator_model, system_prompt, user_prompt)
+        raw_items = payload.get("items")
+        if not isinstance(raw_items, list):
+            raise OpenAIProviderError("Missing or invalid \"items\" in correct-answers response.")
+
+        by_id: dict[str, str] = {}
+        for row in raw_items:
+            if not isinstance(row, dict):
+                continue
+            qid = str(row.get("question_id", "")).strip()
+            ref = str(row.get("reference_answer", "")).strip()
+            if qid and ref:
+                by_id[qid] = ref
+
+        out: list[dict[str, str | float]] = []
+        for qid, qtext, atext, score in turns:
+            out.append(
+                {
+                    "question_id": qid,
+                    "question": qtext,
+                    "candidate_answer": atext,
+                    "score_received": score,
+                    "reference_answer": by_id.get(qid, "Reference answer was not returned for this question."),
+                }
+            )
+        return out

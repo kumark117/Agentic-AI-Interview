@@ -105,6 +105,23 @@ button:disabled {
   filter: brightness(1.06);
 }
 
+.report-home-link--secondary {
+  background: rgba(139, 92, 246, 0.32);
+  box-shadow: 0 2px 12px rgba(99, 60, 200, 0.25);
+}
+
+.report-home-link--secondary:hover {
+  filter: brightness(1.08);
+}
+
+.report-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 14px;
+  margin-bottom: 14px;
+}
+
 .qa-input-form textarea {
   max-width: 760px;
 }

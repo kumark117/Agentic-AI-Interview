@@ -59,6 +59,33 @@ def test_event_seq_is_monotonic_per_session(client) -> None:
     assert len(seqs) == len(set(seqs))
 
 
+def test_correct_answers_report_forbidden_when_session_not_llm_mode(client) -> None:
+    start = client.post(
+        "/api/v1/sessions",
+        json={
+            "candidate_id": "cand_car",
+            "candidate_name": "Car",
+            "role": "Engineer",
+            "experience_level": "mid",
+            "interview_type": "fullstack_general",
+            "interview_mode": "mock",
+            "max_questions": 3,
+        },
+    ).json()
+    sid = start["session_id"]
+    tok = start["session_token"]
+    qid = start["current_question"]["question_id"]
+    assert client.post(
+        f"/api/v1/sessions/{sid}/answers",
+        headers={"X-Session-Token": tok},
+        json={"question_id": qid, "answer_text": "Short answer for mock path."},
+    ).status_code == 200
+    resp = client.get(f"/api/v1/sessions/{sid}/report/correct-answers", headers={"X-Session-Token": tok})
+    assert resp.status_code == 403
+    body = resp.json()
+    assert body["detail"]["error"] == "correct_answers_llm_only"
+
+
 def test_llm_mode_gracefully_falls_back_without_key(client) -> None:
     start = client.post(
         "/api/v1/sessions",

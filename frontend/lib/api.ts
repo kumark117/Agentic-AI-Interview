@@ -48,6 +48,24 @@ export async function getReport(sessionId: string, token: string): Promise<Recor
   return response.json();
 }
 
+export async function getCorrectAnswersReport(sessionId: string, token: string): Promise<Record<string, unknown>> {
+  const response = await fetch(`${API_BASE}/sessions/${sessionId}/report/correct-answers`, {
+    headers: { "X-Session-Token": token }
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = body?.detail;
+    const msg =
+      typeof detail === "object" && detail !== null && "message" in detail
+        ? String((detail as { message: string }).message)
+        : typeof detail === "string"
+          ? detail
+          : "Failed to fetch correct answers report.";
+    throw new Error(msg);
+  }
+  return body as Record<string, unknown>;
+}
+
 export async function getHealth(): Promise<HealthResponse> {
   const response = await fetch(`${API_BASE}/health`);
   if (!response.ok) {

@@ -529,6 +529,49 @@ async def get_final_report(session_id: str, x_session_token: str | None = Header
     return report
 
 
+@router.get("/sessions/{session_id}/report/correct-answers")
+async def get_correct_answers_report(session_id: str, x_session_token: str | None = Header(default=None), db: AsyncSession = Depends(get_db_session)) -> dict:
+    """On-demand LLM-generated reference answers. Only for sessions started in LLM mode."""
+    await _require_session(db, session_id, x_session_token)
+    interview_mode = await _get_session_interview_mode(session_id)
+    if interview_mode != "llm":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": "correct_answers_llm_only",
+                "message": "Correct answers report is only available for sessions started in LLM mode.",
+            },
+        )
+    if not _llm_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error": "llm_unavailable",
+                "message": "Correct answers report requires a configured OpenAI API key.",
+            },
+        )
+
+    rows = (await db.execute(select(Answer, Question, Evaluation).join(Question, Question.question_id == Answer.question_id).join(Evaluation, Evaluation.answer_id == Answer.answer_id).where(Answer.session_id == session_id).order_by(Answer.created_at.asc()))).all()
+    if not rows:
+        return {"session_id": session_id, "interview_mode": "LLM", "generated_at": _now().isoformat(), "items": []}
+
+    turns = [(question.question_id, question.text, answer.answer_text, float(evaluation.score)) for answer, question, evaluation in rows]
+    try:
+        items = await llm_provider.correct_answers_report(turns)
+    except OpenAIProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"error": "llm_generation_failed", "message": str(exc)},
+        ) from exc
+
+    return {
+        "session_id": session_id,
+        "interview_mode": "LLM",
+        "generated_at": _now().isoformat(),
+        "items": items,
+    }
+
+
 @router.get("/metrics")
 async def metrics(x_api_key: str | None = Header(default=None), db: AsyncSession = Depends(get_db_session)):
     if not x_api_key:
