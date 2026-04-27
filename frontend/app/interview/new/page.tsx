@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { startInterview } from "../../../lib/api";
@@ -16,13 +16,18 @@ let interviewBootstrapInFlight: Promise<void> | null = null;
 export default function InterviewBootstrapPage() {
   const router = useRouter();
   const sessionStore = useSessionStore();
+  const sessionRef = useRef(sessionStore);
+  const routerRef = useRef(router);
+  sessionRef.current = sessionStore;
+  routerRef.current = router;
+
   const [detail, setDetail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem(PENDING_KEY);
     if (!raw) {
-      router.replace("/");
+      routerRef.current.replace("/");
       return;
     }
     if (interviewBootstrapInFlight) {
@@ -34,7 +39,7 @@ export default function InterviewBootstrapPage() {
       payload = JSON.parse(raw) as StartSessionRequest;
     } catch {
       sessionStorage.removeItem(PENDING_KEY);
-      router.replace("/");
+      routerRef.current.replace("/");
       return;
     }
 
@@ -43,7 +48,7 @@ export default function InterviewBootstrapPage() {
         setDetail("Calling the API (first question may use the LLM — this can take a bit)…");
         const response = await startInterview(payload);
         sessionStorage.removeItem(PENDING_KEY);
-        sessionStore.setSession(
+        sessionRef.current.setSession(
           response.session_id,
           response.session_token,
           response.current_question,
@@ -51,7 +56,7 @@ export default function InterviewBootstrapPage() {
           payload.candidate_name.trim(),
           payload.max_questions
         );
-        router.replace(`/interview/${response.session_id}`);
+        routerRef.current.replace(`/interview/${response.session_id}`);
       } catch (e) {
         sessionStorage.removeItem(PENDING_KEY);
         setError((e as Error).message);
@@ -60,7 +65,10 @@ export default function InterviewBootstrapPage() {
         interviewBootstrapInFlight = null;
       }
     })();
-  }, [router, sessionStore]);
+    // Intentionally run once on mount: including `sessionStore` would re-run after setSession()
+    // and clear storage, then this effect would see no pending payload and send the user home.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap is a one-shot; refs hold latest store/router
+  }, []);
 
   return (
     <main className="interview-bootstrap">
