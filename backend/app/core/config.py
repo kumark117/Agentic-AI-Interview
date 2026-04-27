@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     llm_model_interviewer: str = "gpt-4o-mini"
     llm_model_evaluator: str = "gpt-4o-mini"
     llm_api_key: str = ""
-    llm_timeout_seconds: float = 8.0
+    # Max time to wait for OpenAI to finish generating the response (read timeout). 8s was too low for real completions.
+    llm_timeout_seconds: float = 120.0
     llm_max_retries: int = 1
     model_config = SettingsConfigDict(env_file=".env", env_prefix="AI_INTERVIEW_", extra="ignore")
 

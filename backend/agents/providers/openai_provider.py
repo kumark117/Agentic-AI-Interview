@@ -36,8 +36,15 @@ class OpenAIProvider:
         self.api_key = api_key
         self.interviewer_model = interviewer_model
         self.evaluator_model = evaluator_model
-        self.timeout_seconds = timeout_seconds
+        self.timeout_seconds = float(timeout_seconds)
         self.base_url = "https://api.openai.com/v1/chat/completions"
+        # Chat completions wait on the server for the full body; a single short "total" timeout caused frequent false timeouts.
+        self._http_timeout = httpx.Timeout(
+            connect=20.0,
+            read=self.timeout_seconds,
+            write=60.0,
+            pool=20.0,
+        )
 
     async def _chat_json(self, model: str, system_prompt: str, user_prompt: str) -> dict:
         headers = {
@@ -54,15 +61,18 @@ class OpenAIProvider:
             "temperature": 0.2,
         }
         try:
-            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
+            async with httpx.AsyncClient(timeout=self._http_timeout) as client:
                 response = await client.post(self.base_url, headers=headers, json=payload)
         except httpx.TimeoutException as exc:
             logger.warning(
-                "OpenAI chat timed out (model=%s, timeout_s=%s)",
+                "OpenAI chat timed out (model=%s, read_timeout_s=%s)",
                 model,
                 self.timeout_seconds,
             )
-            raise OpenAIProviderError("OpenAI request timed out.") from exc
+            raise OpenAIProviderError(
+                f"OpenAI request timed out after {self.timeout_seconds:.0f}s (read). "
+                "Increase AI_INTERVIEW_LLM_TIMEOUT_SECONDS on the server if the model is slow or prompts are large."
+            ) from exc
         except httpx.RequestError as exc:
             logger.warning("OpenAI chat transport error (model=%s): %s", model, exc)
             raise OpenAIProviderError(f"OpenAI request failed: {exc!s}") from exc
