@@ -707,3 +707,46 @@ main.interview-page {
   font-weight: 700;
   letter-spacing: -0.02em;
 }
+
+/* Cold start / Render spin-up */
+.cold-start {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  text-align: center;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.cold-start__title {
+  margin: 0 0 12px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #e7ecff;
+}
+
+.cold-start__hint {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #9aacd9;
+}
+
+.cold-start__meta {
+  margin: 12px 0 0;
+  font-size: 0.85rem;
+  color: #6b7aa8;
+}
+
+.cold-start--error .cold-start__title {
+  color: #ffb4b4;
+}
+
+.cold-start__retry {
+  width: auto;
+  margin-top: 20px;
+  padding: 10px 22px;
+}

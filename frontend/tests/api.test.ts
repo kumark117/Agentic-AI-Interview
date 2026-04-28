@@ -48,7 +48,10 @@ describe("frontend api client", () => {
 
     const health = await getHealth();
 
-    expect(fetchMock).toHaveBeenCalledWith("http://127.0.0.1:8000/api/v1/health");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://127.0.0.1:8000/api/v1/health",
+      expect.objectContaining({ cache: "no-store" })
+    );
     expect(health.version).toBe("3.0");
     expect(health.release_tag).toBe("v3.0-LLM");
   });

@@ -1,9 +1,18 @@
 import { HealthResponse, StartSessionRequest, StartSessionResponse } from "./types";
+import { API_BASE } from "./api-base";
+import { fetchWithRetry } from "./fetch-retry";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000/api/v1";
+const DEFAULT_RETRY = { maxRetries: 5, initialDelayMs: 700, maxDelayMs: 12_000 };
+const LIGHT_RETRY = { maxRetries: 2, initialDelayMs: 450, maxDelayMs: 4_000 };
+
+async function apiFetch(input: string, init?: RequestInit, retry = DEFAULT_RETRY): Promise<Response> {
+  return fetchWithRetry(input, { ...init, cache: "no-store" }, retry);
+}
+
+export { API_BASE };
 
 export async function startInterview(payload: StartSessionRequest): Promise<StartSessionResponse> {
-  const response = await fetch(`${API_BASE}/sessions`, {
+  const response = await apiFetch(`${API_BASE}/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -20,7 +29,7 @@ export async function submitAnswer(
   questionId: string,
   answerText: string
 ): Promise<{ status: string; message: string }> {
-  const response = await fetch(`${API_BASE}/sessions/${sessionId}/answers`, {
+  const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/answers`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -39,7 +48,7 @@ export async function submitAnswer(
 }
 
 export async function getReport(sessionId: string, token: string): Promise<Record<string, unknown>> {
-  const response = await fetch(`${API_BASE}/sessions/${sessionId}/report`, {
+  const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/report`, {
     headers: { "X-Session-Token": token }
   });
   if (!response.ok) {
@@ -49,7 +58,7 @@ export async function getReport(sessionId: string, token: string): Promise<Recor
 }
 
 export async function getCorrectAnswersReport(sessionId: string, token: string): Promise<Record<string, unknown>> {
-  const response = await fetch(`${API_BASE}/sessions/${sessionId}/report/correct-answers`, {
+  const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/report/correct-answers`, {
     headers: { "X-Session-Token": token }
   });
   const body = await response.json().catch(() => ({}));
@@ -67,7 +76,7 @@ export async function getCorrectAnswersReport(sessionId: string, token: string):
 }
 
 export async function getHealth(): Promise<HealthResponse> {
-  const response = await fetch(`${API_BASE}/health`);
+  const response = await apiFetch(`${API_BASE}/health`, undefined, LIGHT_RETRY);
   if (!response.ok) {
     throw new Error("Failed to fetch backend health.");
   }

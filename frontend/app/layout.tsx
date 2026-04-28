@@ -1,5 +1,6 @@
 import "./globals.css";
 
+import { ColdStartGate } from "../components/ColdStartGate";
 import { SessionProvider } from "../lib/session-context";
 
 export const metadata = {
@@ -11,7 +12,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <ColdStartGate>{children}</ColdStartGate>
+        </SessionProvider>
       </body>
     </html>
   );

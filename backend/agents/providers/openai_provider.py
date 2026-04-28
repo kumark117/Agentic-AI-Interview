@@ -46,7 +46,7 @@ class OpenAIProvider:
             pool=20.0,
         )
 
-    async def _chat_json(self, model: str, system_prompt: str, user_prompt: str) -> dict:
+    async def _chat_json(self, model: str, system_prompt: str, user_prompt: str, *, temperature: float = 0.2) -> dict:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -58,7 +58,7 @@ class OpenAIProvider:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            "temperature": 0.2,
+            "temperature": temperature,
         }
         try:
             async with httpx.AsyncClient(timeout=self._http_timeout) as client:
@@ -152,17 +152,22 @@ class OpenAIProvider:
         )
 
     async def is_gibberish_answer(self, question_text: str, answer_text: str) -> bool:
-        """LLM-only gate: true if the answer is obvious nonsense / non-substantive (not a real attempt)."""
+        """LLM-only gate: true only for obvious abuse (non-language / no words), not wrong or off-topic answers."""
         system_prompt = (
-            "You decide if a candidate's answer to a technical interview question is substantive or not. "
-            "Gibberish means: keyboard mashing, random characters, empty platitudes with zero technical content, "
-            "or an explicit refusal to engage without reasoning. A short but real technical attempt is NOT gibberish. "
+            "You detect obvious abuse answers for a technical interview. Use a VERY narrow definition.\n"
+            "Set gibberish to true ONLY if the answer is clearly not real language, for example: "
+            "random letters or symbols, keyboard mashing (e.g. asdfgh), unreadable token soup, emoji-only spam, "
+            "or empty / whitespace-only after stripping.\n"
+            "Set gibberish to false for ANY normal sentence in a human language, including: wrong answers, "
+            "very short answers, jokes, small talk, meta comments about the interview or platform, off-topic tangents, "
+            "or phrases like \"I don't know\" / \"pass\" — those must continue to normal scoring, not this gate.\n"
+            "If unsure, choose gibberish false.\n"
             "Return only JSON: {\"gibberish\": true} or {\"gibberish\": false}."
         )
         user_prompt = (
             f"Question:\n{self._clip_text(question_text, 1200)}\n\nAnswer:\n{self._clip_text(answer_text, 2400)}"
         )
-        payload = await self._chat_json(self.evaluator_model, system_prompt, user_prompt)
+        payload = await self._chat_json(self.evaluator_model, system_prompt, user_prompt, temperature=0.0)
         raw = payload.get("gibberish")
         if isinstance(raw, bool):
             return raw
